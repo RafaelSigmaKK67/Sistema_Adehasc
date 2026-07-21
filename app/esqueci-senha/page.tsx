@@ -9,7 +9,7 @@ export default function PaginaEsqueciSenha() {
       <div className="container-estreito">
         <p className="texto-centro">
           <Link href="/">
-            <Logo tamanho={40} />
+            <Logo tamanho={72} vertical comTagline />
           </Link>
         </p>
         <div className="cartao">

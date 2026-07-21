@@ -108,57 +108,23 @@ export default function PaginaInicial() {
         </section>
       </main>
 
-      <footer className="rodape">
-        <div className="container">
-          <div className="rodape-grade">
-            <div>
-              <h3>ADEHASC</h3>
-              <p>
-                Associação para o Desenvolvimento Habitacional Sustentável de Santa Catarina.
-                Promovemos o acesso à moradia digna para famílias de baixa renda por meio de
-                regularização fundiária, habitação urbana e rural, em Santa Catarina, Paraná,
-                Rio Grande do Sul e Mato Grosso do Sul.
-              </p>
-            </div>
-            <div>
-              <h3>Fale com a gente</h3>
-              <ul>
-                <li>
-                  ☎ <a href="tel:+554936223137">(49) 3622-3137</a>
-                </li>
-                <li>
-                  📱 <a href="tel:+5549985031080">(49) 98503-1080</a>
-                </li>
-                <li>
-                  ✉ <a href="mailto:contato@adehasc.com.br">contato@adehasc.com.br</a>
-                </li>
-                <li>
-                  ✉ <a href="mailto:admadehasc@gmail.com">admadehasc@gmail.com</a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3>Onde estamos</h3>
-              <p>
-                Avenida Salgado Filho, nº 559, Centro
-                <br />
-                CNPJ 78.486.875/0001-32
-              </p>
-              <p>
-                <a href="https://adehasc.com.br" target="_blank" rel="noopener noreferrer">
-                  adehasc.com.br
-                </a>
-              </p>
-            </div>
-          </div>
-          <div className="rodape-final">
-            <span>© {new Date().getFullYear()} ADEHASC — Todos os direitos reservados.</span>
-            <span>
-              <Link href="/privacidade">Privacidade</Link>
-              {' · '}
-              <Link href="/admin/entrar">Área administrativa</Link>
-            </span>
-          </div>
+      <footer className="rodape-min">
+        <div className="container rodape-min-linha">
+          <span>© {new Date().getFullYear()} ADEHASC · CNPJ 78.486.875/0001-32</span>
+          <span>
+            <a href="tel:+554936223137">(49) 3622-3137</a>
+            {' · '}
+            <a href="mailto:contato@adehasc.com.br">contato@adehasc.com.br</a>
+          </span>
+          <span>
+            <a href="https://adehasc.com.br" target="_blank" rel="noopener noreferrer">
+              adehasc.com.br
+            </a>
+            {' · '}
+            <Link href="/privacidade">Privacidade</Link>
+            {' · '}
+            <Link href="/admin/entrar">Área administrativa</Link>
+          </span>
         </div>
       </footer>
     </>

@@ -1,5 +1,6 @@
-// Logo da ADEHASC recriado em SVG embutido — casa vermelha com folha verde,
-// wordmark "ADEHA" escuro + "SC" vermelho e tagline azul.
+// Logo da ADEHASC recriado em SVG fiel à marca: casa vermelha com porta em arco,
+// broto verde de duas folhas no telhado, wordmark "ADEHA" escuro + "SC" vermelho
+// e tagline azul.
 
 export function CasaAdehasc({ tamanho = 44 }: { tamanho?: number }) {
   return (
@@ -11,16 +12,22 @@ export function CasaAdehasc({ tamanho = 44 }: { tamanho?: number }) {
       aria-hidden="true"
       focusable="false"
     >
-      <rect x="41" y="13" width="7" height="15" rx="1.5" fill="#d42b1e" />
+      {/* broto: caule com duas folhas */}
       <path
-        d="M32 7 L59 33 L52 33 L52 54 A3 3 0 0 1 49 57 L15 57 A3 3 0 0 1 12 54 L12 33 L5 33 Z"
-        fill="#d42b1e"
+        d="M32 12 C31.2 8.5 29.8 5.8 27.2 3.6"
+        fill="none"
+        stroke="#4fae3d"
+        strokeWidth="2.6"
+        strokeLinecap="round"
       />
-      <rect x="26.5" y="39" width="11" height="18" rx="2" fill="#ffffff" />
-      <path
-        d="M44.5 13 C44 5.5 51.5 1.5 58.5 3.5 C58 11.5 51.5 15 44.5 13 Z"
-        fill="#4fae3d"
-      />
+      <ellipse cx="22.2" cy="4.9" rx="5.2" ry="2.9" fill="#4fae3d" transform="rotate(-25 22.2 4.9)" />
+      <ellipse cx="32.4" cy="3.6" rx="3.8" ry="2.1" fill="#4fae3d" transform="rotate(18 32.4 3.6)" />
+      {/* telhado com beirais */}
+      <path d="M32 9 L59 35 L5 35 Z" fill="#d42b1e" />
+      {/* corpo da casa */}
+      <rect x="13" y="30" width="38" height="27" rx="2.5" fill="#d42b1e" />
+      {/* porta em arco */}
+      <path d="M27.5 57 L27.5 48.5 A4.5 4.5 0 0 1 36.5 48.5 L36.5 57 Z" fill="#ffffff" />
     </svg>
   );
 }
@@ -28,12 +35,14 @@ export function CasaAdehasc({ tamanho = 44 }: { tamanho?: number }) {
 export default function Logo({
   tamanho = 44,
   comTagline = false,
+  vertical = false,
 }: {
   tamanho?: number;
   comTagline?: boolean;
+  vertical?: boolean;
 }) {
   return (
-    <span className="logo" translate="no">
+    <span className={`logo ${vertical ? 'logo-vertical' : ''}`} translate="no">
       <CasaAdehasc tamanho={tamanho} />
       <span className="logo-textos">
         <span className="logo-nome" aria-label="ADEHASC">

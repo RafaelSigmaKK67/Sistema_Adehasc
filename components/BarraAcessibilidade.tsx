@@ -1,83 +1,44 @@
 'use client';
 
-// Barra de acessibilidade fixa: A– / A+ (4 níveis) e alto contraste.
-// As preferências ficam no localStorage e são aplicadas antes da página desenhar
-// por um script no layout raiz.
+// Barra fina no topo com o botão de modo escuro (a preferência fica salva no
+// navegador e é aplicada antes da página desenhar, sem "piscar").
 
 import { useEffect, useState } from 'react';
 
-const NIVEL_MAXIMO = 3;
-const NIVEL_PADRAO = 1;
-
 export default function BarraAcessibilidade() {
-  const [nivel, setNivel] = useState(NIVEL_PADRAO);
-  const [contraste, setContraste] = useState(false);
+  const [escuro, setEscuro] = useState(false);
 
   useEffect(() => {
-    const raiz = document.documentElement;
-    const salvo = parseInt(raiz.getAttribute('data-fonte') || '', 10);
-    if (!Number.isNaN(salvo) && salvo >= 0 && salvo <= NIVEL_MAXIMO) setNivel(salvo);
-    setContraste(raiz.getAttribute('data-contraste') === '1');
+    setEscuro(document.documentElement.getAttribute('data-tema') === 'escuro');
   }, []);
 
-  function aplicarNivel(novo: number) {
-    const limitado = Math.min(Math.max(novo, 0), NIVEL_MAXIMO);
-    setNivel(limitado);
-    document.documentElement.setAttribute('data-fonte', String(limitado));
-    try {
-      localStorage.setItem('adehasc_fonte', String(limitado));
-    } catch {
-      /* navegação privada sem localStorage */
-    }
-  }
-
-  function alternarContraste() {
-    const novo = !contraste;
-    setContraste(novo);
+  function alternarTema() {
+    const novo = !escuro;
+    setEscuro(novo);
     if (novo) {
-      document.documentElement.setAttribute('data-contraste', '1');
+      document.documentElement.setAttribute('data-tema', 'escuro');
     } else {
-      document.documentElement.removeAttribute('data-contraste');
+      document.documentElement.removeAttribute('data-tema');
     }
     try {
-      localStorage.setItem('adehasc_contraste', novo ? '1' : '0');
+      localStorage.setItem('adehasc_tema', novo ? 'escuro' : 'claro');
     } catch {
       /* navegação privada sem localStorage */
     }
   }
 
   return (
-    <div className="barra-acesso" role="region" aria-label="Opções de acessibilidade">
-      <div className="barra-acesso-grupo">
-        <span className="barra-acesso-rotulo">Tamanho da letra:</span>
-        <button
-          type="button"
-          className="barra-acesso-botao"
-          onClick={() => aplicarNivel(nivel - 1)}
-          disabled={nivel <= 0}
-          aria-label="Diminuir o tamanho da letra"
-        >
-          A−
-        </button>
-        <button
-          type="button"
-          className="barra-acesso-botao"
-          onClick={() => aplicarNivel(nivel + 1)}
-          disabled={nivel >= NIVEL_MAXIMO}
-          aria-label="Aumentar o tamanho da letra"
-        >
-          A+
-        </button>
-        <button
-          type="button"
-          className="barra-acesso-botao barra-acesso-contraste"
-          onClick={alternarContraste}
-          aria-pressed={contraste}
-        >
-          Alto contraste
-        </button>
-      </div>
-      <a className="barra-acesso-fone" href="tel:+554936223137">
+    <div className="barra-topo" role="region" aria-label="Preferências de exibição">
+      <button
+        type="button"
+        className="botao-tema"
+        onClick={alternarTema}
+        aria-pressed={escuro}
+      >
+        <span aria-hidden="true">{escuro ? '☀' : '☾'}</span>
+        {escuro ? 'Modo claro' : 'Modo escuro'}
+      </button>
+      <a className="barra-topo-fone" href="tel:+554936223137">
         ☎ (49) 3622-3137
       </a>
     </div>

@@ -13,7 +13,8 @@ cadastros por um painel administrativo completo.
 - Entrada com CPF + senha.
 - Painel com as 7 etapas do processo, barra de progresso, linha do tempo de atualizações,
   checklist de documentos e edição de telefone/e-mail.
-- Barra de acessibilidade em todas as páginas: A– / A+ (4 níveis de letra) e alto contraste.
+- Modo escuro com um toque (preferência salva no navegador), letras grandes e navegação
+  completa por teclado em todas as páginas.
 
 **Painel administrativo** (`/admin`)
 - Dashboard com estatísticas e gráfico de moradores por etapa.

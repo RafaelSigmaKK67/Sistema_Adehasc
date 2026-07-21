@@ -434,7 +434,7 @@ function TrocarSenhaObrigatoria({ aoConcluir }: { aoConcluir: () => Promise<void
     <main className="pagina-entrar">
       <div className="container-estreito">
         <p className="texto-centro">
-          <Logo tamanho={40} />
+          <Logo tamanho={72} vertical comTagline />
         </p>
         <div className="cartao">
           <h1>Crie a sua nova senha</h1>

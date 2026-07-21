@@ -24,8 +24,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Aplica as preferências de acessibilidade antes da página desenhar (sem "piscar").
-const scriptPreferencias = `try{var d=document.documentElement;var f=localStorage.getItem('adehasc_fonte');if(f!==null&&['0','1','2','3'].indexOf(f)>-1){d.setAttribute('data-fonte',f);}if(localStorage.getItem('adehasc_contraste')==='1'){d.setAttribute('data-contraste','1');}}catch(e){}`;
+// Aplica o modo escuro antes da página desenhar (sem "piscar").
+const scriptPreferencias = `try{if(localStorage.getItem('adehasc_tema')==='escuro'){document.documentElement.setAttribute('data-tema','escuro');}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
