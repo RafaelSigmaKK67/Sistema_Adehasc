@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 const ITENS = [
   { href: '/admin', rotulo: 'Dashboard' },
   { href: '/admin/moradores', rotulo: 'Moradores' },
+  { href: '/admin/comunicados', rotulo: 'Comunicados' },
   { href: '/admin/configuracoes', rotulo: 'Configurações' },
 ];
 

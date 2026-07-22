@@ -601,6 +601,73 @@ html[data-tema='escuro'] .logo-img-escura { display: block; }
 .nota-item:last-child { border-bottom: none; }
 .nota-data { color: var(--suave); font-size: 0.74rem; font-weight: 700; }
 
+/* ---- Comunicados (documento oficial) ---- */
+.lista-comunicados { list-style: none; padding: 0; margin: 0; }
+.lista-comunicados li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 0.9rem;
+}
+.lista-comunicados li:last-child { border-bottom: none; }
+.lista-comunicados summary { cursor: pointer; }
+
+.documento-oficial {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 30px 34px;
+}
+.documento-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid var(--vermelho);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+.documento-tipo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--suave);
+  text-align: right;
+}
+.documento-data { color: var(--suave); font-size: 0.8rem; text-align: right; }
+.documento-para { font-size: 0.85rem; color: var(--suave); margin-bottom: 14px; }
+.documento-corpo { white-space: pre-wrap; font-size: 0.95rem; }
+.documento-assinatura {
+  margin-top: 24px;
+  border-top: 1px solid var(--linha);
+  padding-top: 10px;
+  font-size: 0.78rem;
+  color: var(--suave);
+}
+
+@media print {
+  .nao-imprimir, .botao-tema-flutuante, .faixa-demo, .pular-conteudo { display: none !important; }
+  :root, html[data-tema='escuro'] {
+    --papel: #fff;
+    --fundo: #fff;
+    --texto: #000;
+    --tinta: #000;
+    --suave: #444;
+    --linha: #ccc;
+    --vermelho: #d42b1e;
+  }
+  html[data-tema='escuro'] .logo-img-clara { display: block; }
+  html[data-tema='escuro'] .logo-img-escura { display: none; }
+  body { background: #fff; }
+  .documento-oficial { border: none; box-shadow: none; padding: 0; }
+  .pagina-entrar { padding: 0; }
+}
+
 /* ---- Utilidades ---- */
 .texto-suave { color: var(--suave); }
 .texto-centro { text-align: center; }

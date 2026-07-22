@@ -22,16 +22,18 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const dados = await obterDados();
     const morador = await dados.moradorPorId(id);
     if (!morador) return jsonErro('Cadastro não encontrado.', 404);
-    const [atualizacoes, documentos, notas] = await Promise.all([
+    const [atualizacoes, documentos, notas, comunicados] = await Promise.all([
       dados.listarAtualizacoes(id),
       dados.listarDocumentos(id),
       dados.listarNotas(id),
+      dados.listarComunicadosDoMorador(id),
     ]);
     return jsonOk({
       morador: moradorPublico(morador),
       atualizacoes,
       documentos: documentos.map(({ id: docId, name, status }) => ({ id: docId, name, status })),
       notas,
+      comunicados,
     });
   } catch {
     return jsonErro('Não conseguimos carregar a ficha agora.', 500);

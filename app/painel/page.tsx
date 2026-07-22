@@ -39,11 +39,13 @@ type MoradorPainel = {
 
 type Atualizacao = { id: number; message: string; stage: number | null; author: string; created_at: string };
 type Documento = { id: number; name: string; status: SituacaoDocumento };
+type Comunicado = { id: number; title: string; body: string; author: string; created_at: string };
 
 type DadosPainel = {
   morador: MoradorPainel;
   atualizacoes: Atualizacao[];
   documentos: Documento[];
+  comunicados: Comunicado[];
 };
 
 export default function PaginaPainel() {
@@ -105,7 +107,7 @@ export default function PaginaPainel() {
     );
   }
 
-  const { morador, atualizacoes, documentos } = dados;
+  const { morador, atualizacoes, documentos, comunicados } = dados;
 
   if (morador.must_change) {
     return <TrocarSenhaObrigatoria aoConcluir={carregar} />;
@@ -189,6 +191,32 @@ export default function PaginaPainel() {
           </div>
 
           <div>
+            {comunicados.length > 0 && (
+              <section className="cartao" aria-labelledby="titulo-comunicados">
+                <h2 id="titulo-comunicados">Comunicados</h2>
+                <p className="texto-suave">Documentos que a equipe enviou para você.</p>
+                <ul className="lista-comunicados">
+                  {comunicados.map((comunicado) => (
+                    <li key={comunicado.id}>
+                      <span>
+                        <strong>{comunicado.title}</strong>
+                        <br />
+                        <span className="texto-suave" style={{ fontSize: '0.8rem' }}>
+                          {formatarDataHora(comunicado.created_at)}
+                        </span>
+                      </span>
+                      <Link
+                        className="botao botao-contorno botao-mini"
+                        href={`/painel/comunicados/${comunicado.id}`}
+                      >
+                        Ver documento
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <section className="cartao" aria-labelledby="titulo-documentos-painel">
               <h2 id="titulo-documentos-painel">Meus documentos</h2>
               {documentosPendentes.length > 0 ? (

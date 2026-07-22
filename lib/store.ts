@@ -1,7 +1,7 @@
 // Camada de dados: uma interface, duas implementações (Postgres e memória/demonstração).
 
 import { modoDemonstracao } from '@/lib/ambiente';
-import { SituacaoDocumento } from '@/lib/etapas';
+import { SituacaoDocumento, etapaInfo } from '@/lib/etapas';
 
 // Os nomes dos campos espelham exatamente as colunas do banco.
 export type Morador = {
@@ -59,6 +59,45 @@ export type Admin = {
   password_changed: boolean;
   created_at: string;
 };
+
+export type Comunicado = {
+  id: number;
+  batch_id: string;
+  resident_id: number;
+  title: string;
+  body: string;
+  author: string;
+  created_at: string;
+};
+
+export type ModeloComunicado = { titulo: string; corpo: string };
+
+export type LoteComunicado = {
+  lote_id: string;
+  titulo: string;
+  criado_em: string;
+  total: number;
+};
+
+/** Modelo padrão do comunicado — o admin edita e salva o dele por cima. */
+export const MODELO_COMUNICADO_PADRAO: ModeloComunicado = {
+  titulo: 'Atualização do seu processo de regularização',
+  corpo:
+    'Olá, {nome}!\n\n' +
+    'Temos novidades sobre o seu processo de regularização fundiária ' +
+    '(protocolo {protocolo}), que está na etapa "{etapa}".\n\n' +
+    '[Escreva aqui a atualização para o morador]\n\n' +
+    'Qualquer dúvida, ligue para a gente: (49) 3622-3137.\n\n' +
+    'Com carinho,\nEquipe ADEHASC',
+};
+
+/** Substitui {nome}, {protocolo} e {etapa} pelos dados do morador. */
+export function preencherModelo(texto: string, morador: Morador): string {
+  return (texto || '')
+    .replaceAll('{nome}', morador.full_name)
+    .replaceAll('{protocolo}', morador.protocol)
+    .replaceAll('{etapa}', etapaInfo(morador.stage).titulo);
+}
 
 export type NovoMorador = Omit<
   Morador,
@@ -124,6 +163,17 @@ export interface Dados {
   criarAdmin(nome: string, email: string, hash: string, senhaTrocada: boolean): Promise<Admin>;
   listarAdmins(): Promise<Admin[]>;
   definirSenhaAdmin(id: number, hash: string): Promise<void>;
+
+  obterModeloComunicado(): Promise<ModeloComunicado>;
+  salvarModeloComunicado(modelo: ModeloComunicado): Promise<void>;
+  criarComunicado(
+    moradorId: number,
+    loteId: string,
+    titulo: string,
+    corpo: string
+  ): Promise<Comunicado>;
+  listarComunicadosDoMorador(moradorId: number): Promise<Comunicado[]>;
+  listarLotesComunicados(): Promise<LoteComunicado[]>;
 }
 
 export function gerarProtocolo(id: number, criadoEm: string): string {

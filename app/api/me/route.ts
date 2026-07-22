@@ -15,15 +15,23 @@ export async function GET() {
     const morador = await dados.moradorPorId(acesso.sessao.id);
     if (!morador) return jsonErro('Cadastro não encontrado. Entre novamente.', 401);
 
-    const [atualizacoes, documentos] = await Promise.all([
+    const [atualizacoes, documentos, comunicados] = await Promise.all([
       dados.listarAtualizacoes(morador.id),
       dados.listarDocumentos(morador.id),
+      dados.listarComunicadosDoMorador(morador.id),
     ]);
 
     return jsonOk({
       morador: moradorPublico(morador),
       atualizacoes,
       documentos: documentos.map(({ id, name, status }) => ({ id, name, status })),
+      comunicados: comunicados.map(({ id, title, body, author, created_at }) => ({
+        id,
+        title,
+        body,
+        author,
+        created_at,
+      })),
     });
   } catch {
     return jsonErro('Não conseguimos carregar os seus dados agora. Tente de novo.', 500);

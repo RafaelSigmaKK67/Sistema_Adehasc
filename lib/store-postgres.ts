@@ -8,10 +8,14 @@ import {
   Admin,
   Atualizacao,
   CamposMorador,
+  Comunicado,
   Dados,
   Documento,
   Estatisticas,
   FiltroMoradores,
+  LoteComunicado,
+  MODELO_COMUNICADO_PADRAO,
+  ModeloComunicado,
   Morador,
   Nota,
   NovoMorador,
@@ -104,6 +108,18 @@ function paraNota(linha: Linha): Nota {
   };
 }
 
+function paraComunicado(linha: Linha): Comunicado {
+  return {
+    id: Number(linha.id),
+    batch_id: String(linha.batch_id ?? ''),
+    resident_id: Number(linha.resident_id),
+    title: String(linha.title ?? ''),
+    body: String(linha.body ?? ''),
+    author: String(linha.author ?? 'Equipe ADEHASC'),
+    created_at: iso(linha.created_at),
+  };
+}
+
 function paraAdmin(linha: Linha): Admin {
   return {
     id: Number(linha.id),
@@ -178,9 +194,27 @@ async function criarTabelas(): Promise<void> {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS announcements (
+      id serial PRIMARY KEY,
+      batch_id text NOT NULL,
+      resident_id int NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      body text NOT NULL,
+      author text NOT NULL DEFAULT 'Equipe ADEHASC',
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key text PRIMARY KEY,
+      value text NOT NULL
+    );
+  `);
   await p.query('CREATE INDEX IF NOT EXISTS idx_updates_resident ON updates(resident_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_documents_resident ON documents(resident_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_residents_created ON residents(created_at);');
+  await p.query('CREATE INDEX IF NOT EXISTS idx_announcements_resident ON announcements(resident_id);');
 
   // Primeiro administrador na primeira execução.
   const existentes = await p.query('SELECT count(*)::int AS total FROM admins');
@@ -476,5 +510,59 @@ export const dadosPostgres: Dados = {
       'UPDATE admins SET password_hash = $1, password_changed = true WHERE id = $2',
       [hash, id]
     );
+  },
+
+  async obterModeloComunicado(): Promise<ModeloComunicado> {
+    const r = await pool().query('SELECT value FROM settings WHERE key = $1', [
+      'modelo_comunicado',
+    ]);
+    if (!r.rows[0]) return { ...MODELO_COMUNICADO_PADRAO };
+    try {
+      const salvo = JSON.parse(String(r.rows[0].value)) as ModeloComunicado;
+      if (salvo && typeof salvo.titulo === 'string' && typeof salvo.corpo === 'string') {
+        return salvo;
+      }
+    } catch {
+      /* valor corrompido: volta ao padrão */
+    }
+    return { ...MODELO_COMUNICADO_PADRAO };
+  },
+
+  async salvarModeloComunicado(modelo: ModeloComunicado): Promise<void> {
+    await pool().query(
+      `INSERT INTO settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      ['modelo_comunicado', JSON.stringify(modelo)]
+    );
+  },
+
+  async criarComunicado(moradorId, loteId, titulo, corpo): Promise<Comunicado> {
+    const r = await pool().query(
+      `INSERT INTO announcements (batch_id, resident_id, title, body)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [loteId, moradorId, titulo, corpo]
+    );
+    return paraComunicado(r.rows[0]);
+  },
+
+  async listarComunicadosDoMorador(moradorId: number): Promise<Comunicado[]> {
+    const r = await pool().query(
+      'SELECT * FROM announcements WHERE resident_id = $1 ORDER BY created_at DESC, id DESC',
+      [moradorId]
+    );
+    return r.rows.map(paraComunicado);
+  },
+
+  async listarLotesComunicados(): Promise<LoteComunicado[]> {
+    const r = await pool().query(
+      `SELECT batch_id, min(title) AS title, min(created_at) AS created_at, count(*)::int AS total
+       FROM announcements GROUP BY batch_id ORDER BY min(created_at) DESC LIMIT 50`
+    );
+    return r.rows.map((linha) => ({
+      lote_id: String(linha.batch_id),
+      titulo: String(linha.title),
+      criado_em: iso(linha.created_at),
+      total: Number(linha.total),
+    }));
   },
 };

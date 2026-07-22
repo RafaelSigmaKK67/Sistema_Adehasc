@@ -45,12 +45,14 @@ type MoradorFicha = {
 type Atualizacao = { id: number; message: string; stage: number | null; author: string; created_at: string };
 type Documento = { id: number; name: string; status: SituacaoDocumento };
 type Nota = { id: number; text: string; created_at: string };
+type ComunicadoFicha = { id: number; title: string; body: string; created_at: string };
 
 type Ficha = {
   morador: MoradorFicha;
   atualizacoes: Atualizacao[];
   documentos: Documento[];
   notas: Nota[];
+  comunicados: ComunicadoFicha[];
 };
 
 export default function PaginaFichaMorador() {
@@ -151,6 +153,34 @@ export default function PaginaFichaMorador() {
 
         <div>
           <Documentos moradorId={morador.id} documentos={ficha.documentos} aoSalvar={carregar} />
+
+          <section className="cartao" aria-labelledby="titulo-comunicados-ficha">
+            <h2 id="titulo-comunicados-ficha">Comunicados</h2>
+            {ficha.comunicados.length === 0 ? (
+              <p className="texto-suave">Nenhum comunicado enviado para este morador.</p>
+            ) : (
+              <ul className="lista-comunicados">
+                {ficha.comunicados.map((comunicado) => (
+                  <li key={comunicado.id}>
+                    <details style={{ width: '100%' }}>
+                      <summary>
+                        <strong>{comunicado.title}</strong>
+                        <span className="texto-suave"> · {formatarDataHora(comunicado.created_at)}</span>
+                      </summary>
+                      <p className="documento-corpo mt-1 sem-margem">{comunicado.body}</p>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link
+              className="botao botao-contorno botao-mini mt-2"
+              href={`/admin/comunicados?para=${encodeURIComponent(morador.protocol)}`}
+            >
+              Novo comunicado para este morador
+            </Link>
+          </section>
+
           <NotasInternas moradorId={morador.id} notas={ficha.notas} aoSalvar={carregar} />
           <RedefinirSenha moradorId={morador.id} deveTrocar={morador.must_change} aoSalvar={carregar} />
           <ExcluirCadastro moradorId={morador.id} nome={morador.full_name} />

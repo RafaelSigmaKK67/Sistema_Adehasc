@@ -7,11 +7,15 @@ import {
   Admin,
   Atualizacao,
   CamposMorador,
+  Comunicado,
   Dados,
   Documento,
   ErroDuplicado,
   Estatisticas,
   FiltroMoradores,
+  LoteComunicado,
+  MODELO_COMUNICADO_PADRAO,
+  ModeloComunicado,
   Morador,
   Nota,
   NovoMorador,
@@ -24,7 +28,16 @@ type Banco = {
   documentos: Documento[];
   notas: Nota[];
   admins: Admin[];
-  seq: { morador: number; atualizacao: number; documento: number; nota: number; admin: number };
+  comunicados: Comunicado[];
+  modeloComunicado: ModeloComunicado;
+  seq: {
+    morador: number;
+    atualizacao: number;
+    documento: number;
+    nota: number;
+    admin: number;
+    comunicado: number;
+  };
 };
 
 function agoraIso(): string {
@@ -80,7 +93,9 @@ function semear(): Banco {
     documentos: [],
     notas: [],
     admins: [],
-    seq: { morador: 0, atualizacao: 0, documento: 0, nota: 0, admin: 0 },
+    comunicados: [],
+    modeloComunicado: { ...MODELO_COMUNICADO_PADRAO },
+    seq: { morador: 0, atualizacao: 0, documento: 0, nota: 0, admin: 0, comunicado: 0 },
   };
 
   // Primeiro administrador (mesma regra do banco real).
@@ -158,6 +173,20 @@ function semear(): Banco {
       stage: null,
       author: 'Equipe ADEHASC',
       created_at: diasAtras(2),
+    });
+    banco.comunicados.push({
+      id: ++banco.seq.comunicado,
+      batch_id: 'demonstracao-1',
+      resident_id: teste.id,
+      title: 'Mutirão de atendimento em Concórdia',
+      body:
+        `Olá, ${teste.full_name}!\n\n` +
+        `No próximo sábado faremos um mutirão de atendimento na sede da ADEHASC ` +
+        `(Avenida Salgado Filho, nº 559, Centro), das 9h às 16h.\n\n` +
+        `Traga os seus documentos pendentes — nossa equipe confere tudo na hora.\n\n` +
+        `Qualquer dúvida, ligue para a gente: (49) 3622-3137.\n\nCom carinho,\nEquipe ADEHASC`,
+      author: 'Equipe ADEHASC',
+      created_at: diasAtras(5),
     });
   }
 
@@ -384,5 +413,55 @@ export const dadosMemoria: Dados = {
       admin.password_hash = hash;
       admin.password_changed = true;
     }
+  },
+
+  async obterModeloComunicado(): Promise<ModeloComunicado> {
+    return { ...banco().modeloComunicado };
+  },
+
+  async salvarModeloComunicado(modelo: ModeloComunicado): Promise<void> {
+    banco().modeloComunicado = { ...modelo };
+  },
+
+  async criarComunicado(moradorId, loteId, titulo, corpo): Promise<Comunicado> {
+    const b = banco();
+    const comunicado: Comunicado = {
+      id: ++b.seq.comunicado,
+      batch_id: loteId,
+      resident_id: moradorId,
+      title: titulo,
+      body: corpo,
+      author: 'Equipe ADEHASC',
+      created_at: agoraIso(),
+    };
+    b.comunicados.push(comunicado);
+    return comunicado;
+  },
+
+  async listarComunicadosDoMorador(moradorId: number): Promise<Comunicado[]> {
+    return banco()
+      .comunicados.filter((c) => c.resident_id === moradorId)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  },
+
+  async listarLotesComunicados(): Promise<LoteComunicado[]> {
+    const lotes = new Map<string, LoteComunicado>();
+    for (const c of banco().comunicados) {
+      const lote = lotes.get(c.batch_id);
+      if (lote) {
+        lote.total += 1;
+        if (c.created_at < lote.criado_em) lote.criado_em = c.created_at;
+      } else {
+        lotes.set(c.batch_id, {
+          lote_id: c.batch_id,
+          titulo: c.title,
+          criado_em: c.created_at,
+          total: 1,
+        });
+      }
+    }
+    return [...lotes.values()]
+      .sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1))
+      .slice(0, 50);
   },
 };
