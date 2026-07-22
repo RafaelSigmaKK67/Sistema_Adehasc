@@ -216,7 +216,8 @@ async function criarTabelas(): Promise<void> {
   await p.query('CREATE INDEX IF NOT EXISTS idx_residents_created ON residents(created_at);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_announcements_resident ON announcements(resident_id);');
 
-  // Primeiro administrador na primeira execução.
+  // Primeiro administrador na primeira execução. Se a senha veio das variáveis
+  // de ambiente, ela não é a senha padrão pública — sem aviso de troca.
   const existentes = await p.query('SELECT count(*)::int AS total FROM admins');
   if (existentes.rows[0].total === 0) {
     const email = (process.env.ADMIN_EMAIL || 'admin@adehasc.com.br').toLowerCase();
@@ -224,8 +225,8 @@ async function criarTabelas(): Promise<void> {
     const hash = await bcrypt.hash(senha, 10);
     await p.query(
       `INSERT INTO admins (name, email, password_hash, password_changed)
-       VALUES ($1, $2, $3, false) ON CONFLICT (email) DO NOTHING`,
-      ['Equipe ADEHASC', email, hash]
+       VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING`,
+      ['Equipe ADEHASC', email, hash, !!process.env.ADMIN_PASSWORD]
     );
   }
 }

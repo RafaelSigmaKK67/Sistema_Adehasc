@@ -98,7 +98,8 @@ function semear(): Banco {
     seq: { morador: 0, atualizacao: 0, documento: 0, nota: 0, admin: 0, comunicado: 0 },
   };
 
-  // Primeiro administrador (mesma regra do banco real).
+  // Primeiro administrador (mesma regra do banco real). Se a senha veio das
+  // variáveis de ambiente, ela não é a senha padrão pública — sem aviso de troca.
   const emailAdmin = process.env.ADMIN_EMAIL || 'admin@adehasc.com.br';
   const senhaAdmin = process.env.ADMIN_PASSWORD || 'adehasc2026';
   banco.admins.push({
@@ -106,7 +107,7 @@ function semear(): Banco {
     name: 'Equipe ADEHASC',
     email: emailAdmin.toLowerCase(),
     password_hash: bcrypt.hashSync(senhaAdmin, 10),
-    password_changed: false,
+    password_changed: !!process.env.ADMIN_PASSWORD,
     created_at: agoraIso(),
   });
 
