@@ -125,7 +125,7 @@ export default function PaginaPainel() {
           </div>
           <div className="cabecalho-acoes">
             <Link className="painel-logo" href="/" aria-label="Ir para a página inicial">
-              <Logo altura={44} />
+              <Logo altura={32} />
             </Link>
             <button type="button" className="botao botao-contorno" onClick={sair}>
               Sair
@@ -434,7 +434,7 @@ function TrocarSenhaObrigatoria({ aoConcluir }: { aoConcluir: () => Promise<void
     <main className="pagina-entrar">
       <div className="container-estreito">
         <p className="texto-centro">
-          <Logo altura={80} />
+          <Logo altura={56} />
         </p>
         <div className="cartao">
           <h1>Crie a sua nova senha</h1>

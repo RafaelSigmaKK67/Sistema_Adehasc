@@ -44,7 +44,7 @@ export default function PaginaAdminEntrar() {
       <div className="container-estreito">
         <p className="texto-centro">
           <Link href="/">
-            <Logo altura={80} />
+            <Logo altura={56} />
           </Link>
         </p>
         <div className="cartao">

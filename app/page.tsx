@@ -7,7 +7,7 @@ export default function PaginaInicial() {
     <>
       <header className="cabecalho">
         <div className="container cabecalho-linha">
-          <Logo altura={56} />
+          <Logo altura={40} />
           <div className="cabecalho-acoes">
             <a className="cabecalho-fone" href="tel:+554936223137">
               ☎ (49) 3622-3137
@@ -46,8 +46,8 @@ export default function PaginaInicial() {
               <img
                 src="/foto-familia.png"
                 alt="Família reunida segurando uma casinha"
-                width={400}
-                height={434}
+                width={300}
+                height={325}
                 className="hero-foto"
               />
             </div>

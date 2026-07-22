@@ -252,7 +252,7 @@ export default function PaginaCadastro() {
       <div className="container-estreito" ref={topoRef}>
         <p>
           <Link href="/" className="logo-volta" aria-label="Ir para a página inicial">
-            <Logo altura={48} />
+            <Logo altura={36} />
           </Link>
         </p>
         <div className="passo-cabecalho">
