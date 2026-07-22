@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Atkinson_Hyperlegible } from 'next/font/google';
-import BarraAcessibilidade from '@/components/BarraAcessibilidade';
+import BotaoTema from '@/components/BotaoTema';
 import { modoDemonstracao } from '@/lib/ambiente';
 import './globals.css';
 
@@ -35,13 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="pular-conteudo" href="#conteudo">
           Pular para o conteúdo
         </a>
-        <BarraAcessibilidade />
         {modoDemonstracao() && (
           <div className="faixa-demo" role="status">
             Modo demonstração — os cadastros ainda não estão sendo salvos.
           </div>
         )}
         <div id="conteudo">{children}</div>
+        <BotaoTema />
       </body>
     </html>
   );

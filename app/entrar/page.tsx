@@ -53,7 +53,7 @@ export default function PaginaEntrar() {
       <div className="container-estreito">
         <p className="texto-centro">
           <Link href="/">
-            <Logo tamanho={72} vertical comTagline />
+            <Logo altura={80} />
           </Link>
         </p>
         <div className="cartao">

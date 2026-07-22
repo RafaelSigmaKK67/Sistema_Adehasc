@@ -106,41 +106,28 @@ img, svg { max-width: 100%; }
 }
 .pular-conteudo:focus { left: 0; }
 
-/* ---- Barra fina do topo (modo escuro + telefone) ---- */
-.barra-topo {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* ---- Botão flutuante de modo escuro (todas as páginas) ---- */
+.botao-tema-flutuante {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 150;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1.5px solid var(--linha);
+  background: var(--papel);
+  color: var(--texto);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--sombra);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  height: 48px;
-  padding: 0 18px;
-  background: var(--papel);
-  border-bottom: 1px solid var(--linha);
-  font-size: 15px; /* fixo: a barra não desalinha o topo */
+  justify-content: center;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.botao-tema {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 2px 16px;
-  border: 1.5px solid var(--linha);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--texto);
-  font-size: 14px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.botao-tema:hover { border-color: var(--suave); }
-.barra-topo-fone { font-weight: 700; color: var(--azul); text-decoration: none; white-space: nowrap; }
-.barra-topo-fone:hover { text-decoration: underline; }
-@media (max-width: 480px) { .barra-topo-fone { display: none; } }
+.botao-tema-flutuante:hover { border-color: var(--suave); transform: scale(1.06); }
 
 /* ---- Faixa de demonstração ---- */
 .faixa-demo {
@@ -153,16 +140,13 @@ img, svg { max-width: 100%; }
   font-weight: 700;
 }
 
-/* ---- Logo ---- */
-.logo { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
-.logo-textos { display: flex; flex-direction: column; line-height: 1.15; }
-.logo-nome { font-weight: 700; font-size: 1.35rem; color: var(--tinta); letter-spacing: 0.5px; }
-.logo-sc { color: var(--vermelho); }
-.logo-tagline { color: var(--azul); font-size: 0.7rem; max-width: 300px; }
-.logo-vertical { flex-direction: column; gap: 10px; text-align: center; }
-.logo-vertical .logo-textos { align-items: center; }
-.logo-vertical .logo-tagline { max-width: 280px; }
-@media (max-width: 700px) { .logo:not(.logo-vertical) .logo-tagline { display: none; } }
+/* ---- Logo oficial (imagem original; versão branca no tema escuro) ---- */
+.logo { display: inline-flex; align-items: center; }
+.logo-img { display: block; height: auto; }
+.logo-img-escura { display: none; }
+html[data-tema='escuro'] .logo-img-clara { display: none; }
+html[data-tema='escuro'] .logo-img-escura { display: block; }
+.painel-logo { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* ---- Botões ---- */
 .botao {
@@ -267,14 +251,17 @@ img, svg { max-width: 100%; }
 /* ---- Cabeçalho público ---- */
 .cabecalho {
   position: sticky;
-  top: 48px; /* logo abaixo da barra do topo */
+  top: 0;
   z-index: 90;
   background: var(--papel);
   border-bottom: 1px solid var(--linha);
-  padding: 14px 0;
+  padding: 12px 0;
 }
 .cabecalho-linha { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.cabecalho-acoes { display: flex; gap: 12px; flex-wrap: wrap; }
+.cabecalho-acoes { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cabecalho-fone { font-weight: 700; color: var(--azul); text-decoration: none; white-space: nowrap; }
+.cabecalho-fone:hover { text-decoration: underline; }
+@media (max-width: 640px) { .cabecalho-fone { display: none; } }
 
 /* ---- Página inicial ---- */
 .hero { padding: 64px 0 48px; }
@@ -296,6 +283,12 @@ img, svg { max-width: 100%; }
 .hero-subtitulo { font-size: 1.12rem; color: var(--suave); max-width: 34em; }
 .hero-botoes { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
 .hero-figura { text-align: center; }
+.hero-foto {
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  max-width: 100%;
+  height: auto;
+}
 
 .secao { padding: 52px 0; }
 .secao-alterna { background: var(--papel); border-top: 1px solid var(--linha); border-bottom: 1px solid var(--linha); }
@@ -512,7 +505,7 @@ img, svg { max-width: 100%; }
 .caixa-teste code { font-size: 1rem; font-weight: 700; background: var(--papel); padding: 2px 8px; border-radius: 6px; }
 
 /* ---- Painel administrativo ---- */
-.admin-layout { display: grid; grid-template-columns: 250px 1fr; min-height: calc(100vh - 48px); }
+.admin-layout { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
 .admin-menu { background: var(--menu); color: #fff; padding: 22px 0; }
 .admin-menu-titulo { padding: 0 22px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.16); margin-bottom: 14px; }
 .admin-menu-titulo strong { display: block; font-size: 1.15rem; }

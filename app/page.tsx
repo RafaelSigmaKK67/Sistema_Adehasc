@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Logo, { CasaAdehasc } from '@/components/Logo';
+import Logo from '@/components/Logo';
 import { DOCUMENTOS_PADRAO, ETAPAS } from '@/lib/etapas';
 
 export default function PaginaInicial() {
@@ -7,8 +7,11 @@ export default function PaginaInicial() {
     <>
       <header className="cabecalho">
         <div className="container cabecalho-linha">
-          <Logo comTagline />
+          <Logo altura={56} />
           <div className="cabecalho-acoes">
+            <a className="cabecalho-fone" href="tel:+554936223137">
+              ☎ (49) 3622-3137
+            </a>
             <Link className="botao botao-contorno" href="/entrar">
               Entrar
             </Link>
@@ -39,8 +42,14 @@ export default function PaginaInicial() {
                 </Link>
               </div>
             </div>
-            <div className="hero-figura" aria-hidden="true">
-              <CasaAdehasc tamanho={260} />
+            <div className="hero-figura">
+              <img
+                src="/foto-familia.png"
+                alt="Família reunida segurando uma casinha"
+                width={400}
+                height={434}
+                className="hero-foto"
+              />
             </div>
           </div>
         </section>
