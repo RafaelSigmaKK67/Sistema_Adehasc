@@ -1,22 +1,12 @@
 // Gera uma senha temporária fácil de ditar por telefone (ex.: KM4729).
 // Ela é mostrada uma única vez e o morador é obrigado a trocá-la no próximo acesso.
 
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { exigirAdmin, jsonErro, jsonOk, origemValida } from '@/lib/http';
+import { gerarSenhaTemporaria } from '@/lib/senha-temporaria';
 import { obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
-
-// Sem letras que confundem ao ditar (I, O, Q…).
-const LETRAS = 'ABCDEFGHJKLMNPRSTUVXZ';
-
-function gerarSenhaTemporaria(): string {
-  const letra1 = LETRAS[crypto.randomInt(LETRAS.length)];
-  const letra2 = LETRAS[crypto.randomInt(LETRAS.length)];
-  const numeros = crypto.randomInt(1000, 10000);
-  return `${letra1}${letra2}${numeros}`;
-}
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   if (!origemValida(req)) return jsonErro('Origem inválida.', 403);

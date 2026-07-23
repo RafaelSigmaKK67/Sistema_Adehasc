@@ -78,9 +78,14 @@ export default function PaginaMoradores() {
     <div>
       <div className="ficha-topo">
         <h1 className="sem-margem">Moradores</h1>
-        <a className="botao botao-verde" href="/api/admin/export">
-          Exportar CSV
-        </a>
+        <div className="acoes-linha">
+          <Link className="botao botao-contorno" href="/admin/moradores/importar">
+            Importar CSV
+          </Link>
+          <a className="botao botao-verde" href="/api/admin/export">
+            Exportar CSV
+          </a>
+        </div>
       </div>
 
       <form className="cartao" onSubmit={buscar}>
