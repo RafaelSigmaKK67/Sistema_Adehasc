@@ -15,10 +15,11 @@ export async function GET() {
     const morador = await dados.moradorPorId(acesso.sessao.id);
     if (!morador) return jsonErro('Cadastro não encontrado. Entre novamente.', 401);
 
-    const [atualizacoes, documentos, comunicados] = await Promise.all([
+    const [atualizacoes, documentos, comunicados, mensagens] = await Promise.all([
       dados.listarAtualizacoes(morador.id),
       dados.listarDocumentos(morador.id),
       dados.listarComunicadosDoMorador(morador.id),
+      dados.listarMensagens(morador.id),
     ]);
 
     return jsonOk({
@@ -32,6 +33,8 @@ export async function GET() {
         author,
         created_at,
       })),
+      mensagens_nao_lidas: mensagens.filter((m) => m.sender === 'equipe' && !m.read_by_resident)
+        .length,
     });
   } catch {
     return jsonErro('Não conseguimos carregar os seus dados agora. Tente de novo.', 500);

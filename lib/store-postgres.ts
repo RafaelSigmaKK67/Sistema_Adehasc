@@ -9,16 +9,20 @@ import {
   Atualizacao,
   CamposMorador,
   Comunicado,
+  Conversa,
   Dados,
   Documento,
   Estatisticas,
   FiltroMoradores,
+  InscricaoPush,
   LoteComunicado,
   MODELO_COMUNICADO_PADRAO,
+  Mensagem,
   ModeloComunicado,
   Morador,
   Nota,
   NovoMorador,
+  RemetenteMensagem,
   gerarProtocolo,
 } from '@/lib/store';
 
@@ -104,6 +108,18 @@ function paraNota(linha: Linha): Nota {
     id: Number(linha.id),
     resident_id: Number(linha.resident_id),
     text: String(linha.text ?? ''),
+    created_at: iso(linha.created_at),
+  };
+}
+
+function paraMensagem(linha: Linha): Mensagem {
+  return {
+    id: Number(linha.id),
+    resident_id: Number(linha.resident_id),
+    sender: (String(linha.sender ?? 'morador') as RemetenteMensagem),
+    text: String(linha.text ?? ''),
+    read_by_admin: Boolean(linha.read_by_admin),
+    read_by_resident: Boolean(linha.read_by_resident),
     created_at: iso(linha.created_at),
   };
 }
@@ -211,10 +227,33 @@ async function criarTabelas(): Promise<void> {
       value text NOT NULL
     );
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id serial PRIMARY KEY,
+      resident_id int NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
+      sender text NOT NULL,
+      text text NOT NULL,
+      read_by_admin boolean NOT NULL DEFAULT false,
+      read_by_resident boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id serial PRIMARY KEY,
+      resident_id int NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
+      endpoint text UNIQUE NOT NULL,
+      p256dh text NOT NULL,
+      auth text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await p.query('CREATE INDEX IF NOT EXISTS idx_updates_resident ON updates(resident_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_documents_resident ON documents(resident_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_residents_created ON residents(created_at);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_announcements_resident ON announcements(resident_id);');
+  await p.query('CREATE INDEX IF NOT EXISTS idx_messages_resident ON messages(resident_id);');
+  await p.query('CREATE INDEX IF NOT EXISTS idx_push_resident ON push_subscriptions(resident_id);');
 
   // Primeiro administrador na primeira execução. Se a senha veio das variáveis
   // de ambiente, ela não é a senha padrão pública — sem aviso de troca.
@@ -511,6 +550,89 @@ export const dadosPostgres: Dados = {
       'UPDATE admins SET password_hash = $1, password_changed = true WHERE id = $2',
       [hash, id]
     );
+  },
+
+  async enviarMensagem(moradorId, remetente, texto): Promise<Mensagem> {
+    const r = await pool().query(
+      `INSERT INTO messages (resident_id, sender, text, read_by_admin, read_by_resident)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [moradorId, remetente, texto, remetente === 'equipe', remetente === 'morador']
+    );
+    return paraMensagem(r.rows[0]);
+  },
+
+  async listarMensagens(moradorId: number): Promise<Mensagem[]> {
+    const r = await pool().query(
+      'SELECT * FROM messages WHERE resident_id = $1 ORDER BY created_at, id',
+      [moradorId]
+    );
+    return r.rows.map(paraMensagem);
+  },
+
+  async marcarMensagensLidas(moradorId: number, por: RemetenteMensagem): Promise<void> {
+    if (por === 'equipe') {
+      await pool().query(
+        `UPDATE messages SET read_by_admin = true WHERE resident_id = $1 AND sender = 'morador'`,
+        [moradorId]
+      );
+    } else {
+      await pool().query(
+        `UPDATE messages SET read_by_resident = true WHERE resident_id = $1 AND sender = 'equipe'`,
+        [moradorId]
+      );
+    }
+  },
+
+  async listarConversas(): Promise<Conversa[]> {
+    const r = await pool().query(`
+      SELECT r.id AS resident_id, r.full_name, r.protocol,
+        (SELECT text FROM messages WHERE resident_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) AS ultima,
+        (SELECT sender FROM messages WHERE resident_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) AS remetente,
+        (SELECT created_at FROM messages WHERE resident_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) AS ultima_em,
+        (SELECT count(*)::int FROM messages WHERE resident_id = r.id AND sender = 'morador' AND NOT read_by_admin) AS nao_lidas
+      FROM residents r
+      WHERE EXISTS (SELECT 1 FROM messages WHERE resident_id = r.id)
+      ORDER BY ultima_em DESC
+      LIMIT 100
+    `);
+    return r.rows.map((linha) => ({
+      resident_id: Number(linha.resident_id),
+      nome: String(linha.full_name ?? ''),
+      protocolo: String(linha.protocol ?? ''),
+      ultima_mensagem: String(linha.ultima ?? ''),
+      remetente_ultima: (String(linha.remetente ?? 'morador') as RemetenteMensagem),
+      ultima_em: iso(linha.ultima_em),
+      nao_lidas: Number(linha.nao_lidas ?? 0),
+    }));
+  },
+
+  async salvarInscricaoPush(moradorId, endpoint, p256dh, auth): Promise<void> {
+    await pool().query(
+      `INSERT INTO push_subscriptions (resident_id, endpoint, p256dh, auth)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (endpoint) DO UPDATE
+       SET resident_id = EXCLUDED.resident_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
+      [moradorId, endpoint, p256dh, auth]
+    );
+  },
+
+  async removerInscricaoPush(endpoint: string): Promise<void> {
+    await pool().query('DELETE FROM push_subscriptions WHERE endpoint = $1', [endpoint]);
+  },
+
+  async listarInscricoesPush(moradorId: number): Promise<InscricaoPush[]> {
+    const r = await pool().query(
+      'SELECT * FROM push_subscriptions WHERE resident_id = $1',
+      [moradorId]
+    );
+    return r.rows.map((linha) => ({
+      id: Number(linha.id),
+      resident_id: Number(linha.resident_id),
+      endpoint: String(linha.endpoint ?? ''),
+      p256dh: String(linha.p256dh ?? ''),
+      auth: String(linha.auth ?? ''),
+      created_at: iso(linha.created_at),
+    }));
   },
 
   async obterModeloComunicado(): Promise<ModeloComunicado> {

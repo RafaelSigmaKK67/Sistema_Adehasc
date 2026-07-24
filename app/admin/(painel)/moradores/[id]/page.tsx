@@ -119,9 +119,14 @@ export default function PaginaFichaMorador() {
             {formatarDataHora(morador.created_at)}
           </p>
         </div>
-        <Link className="botao botao-suave" href="/admin/moradores">
-          ← Voltar para a lista
-        </Link>
+        <div className="acoes-linha">
+          <Link className="botao botao-contorno" href={`/admin/mensagens/${morador.id}`}>
+            💬 Conversar
+          </Link>
+          <Link className="botao botao-suave" href="/admin/moradores">
+            ← Voltar para a lista
+          </Link>
+        </div>
       </div>
 
       <div className="painel-grade">

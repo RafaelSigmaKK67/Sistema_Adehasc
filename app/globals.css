@@ -601,6 +601,81 @@ html[data-tema='escuro'] .logo-img-escura { display: block; }
 .nota-item:last-child { border-bottom: none; }
 .nota-data { color: var(--suave); font-size: 0.74rem; font-weight: 700; }
 
+/* ---- Conversa (chat morador ↔ equipe) ---- */
+.chat-cartao { display: flex; flex-direction: column; padding: 14px; }
+.chat-mensagens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  min-height: 200px;
+  overflow-y: auto;
+  padding: 6px 4px;
+}
+.balao {
+  max-width: 85%;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 0.92rem;
+}
+.balao-meu {
+  align-self: flex-end;
+  background: var(--azul-suave);
+  border-bottom-right-radius: 4px;
+}
+.balao-equipe {
+  align-self: flex-start;
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  border-bottom-left-radius: 4px;
+}
+.balao-autor { display: block; font-size: 0.7rem; font-weight: 700; color: var(--suave); }
+.balao-texto { margin: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.balao-hora { display: block; font-size: 0.68rem; color: var(--suave); text-align: right; }
+.chat-envio { display: flex; gap: 8px; margin-top: 10px; }
+.chat-envio input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--texto);
+  padding: 10px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  background: var(--papel);
+}
+.chat-envio input:focus { border-color: var(--azul); outline: var(--foco); outline-offset: 1px; }
+
+.selo-nao-lidas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--vermelho);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.lista-conversas { list-style: none; padding: 0; margin: 0; }
+.lista-conversas li { border-bottom: 1px solid var(--linha); }
+.lista-conversas li:last-child { border-bottom: none; }
+.conversa-link {
+  display: block;
+  padding: 12px 8px;
+  text-decoration: none;
+  color: var(--texto);
+  border-radius: var(--raio-campo);
+}
+.conversa-link:hover { background: var(--azul-suave); }
+.conversa-topo { display: flex; align-items: center; gap: 8px; }
+.conversa-topo strong { color: var(--tinta); }
+.conversa-quando { margin-left: auto; font-size: 0.76rem; white-space: nowrap; }
+.conversa-previa { display: block; font-size: 0.85rem; margin-top: 2px; }
+
 /* ---- Comunicados (documento oficial) ---- */
 .lista-comunicados { list-style: none; padding: 0; margin: 0; }
 .lista-comunicados li {

@@ -5,6 +5,7 @@
 import crypto from 'crypto';
 import { limparCpf } from '@/lib/cpf';
 import { exigirAdmin, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
+import { notificarMorador } from '@/lib/push';
 import { Morador, obterDados, preencherModelo } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -94,6 +95,11 @@ export async function POST(req: Request) {
         `Novo comunicado para você: "${tituloFinal}". Abra a seção Comunicados do seu painel para ler o documento.`,
         null
       );
+      await notificarMorador(dados, morador.id, {
+        titulo: 'ADEHASC — novo comunicado',
+        corpo: tituloFinal,
+        url: '/painel',
+      });
     }
     return jsonOk({ total: destinatarios.length, lote_id: loteId }, 201);
   } catch {

@@ -61,7 +61,12 @@ git push https://SEU_TOKEN@github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git main
 3. (Opcional) Crie **`ADMIN_EMAIL`** e **`ADMIN_PASSWORD`** para definir o e-mail e a
    senha do primeiro administrador. Sem elas, o padrão é `admin@adehasc.com.br` /
    `adehasc2026`.
-4. Faça **Redeploy** de novo para as variáveis valerem.
+4. (Opcional, para as **notificações no celular**) Crie **`VAPID_PUBLIC_KEY`**,
+   **`VAPID_PRIVATE_KEY`** e **`VAPID_SUBJECT`** (ex.: `mailto:contato@adehasc.com.br`).
+   Para gerar as duas chaves, rode uma vez no terminal, dentro da pasta do projeto:
+   `npx web-push generate-vapid-keys`. Sem essas variáveis o sistema funciona normalmente,
+   só fica sem o botão de ativar notificações.
+5. Faça **Redeploy** de novo para as variáveis valerem.
 
 ## 5. Primeiro acesso do administrador
 

@@ -8,17 +8,21 @@ import {
   Atualizacao,
   CamposMorador,
   Comunicado,
+  Conversa,
   Dados,
   Documento,
   ErroDuplicado,
   Estatisticas,
   FiltroMoradores,
+  InscricaoPush,
   LoteComunicado,
   MODELO_COMUNICADO_PADRAO,
+  Mensagem,
   ModeloComunicado,
   Morador,
   Nota,
   NovoMorador,
+  RemetenteMensagem,
   gerarProtocolo,
 } from '@/lib/store';
 
@@ -29,6 +33,8 @@ type Banco = {
   notas: Nota[];
   admins: Admin[];
   comunicados: Comunicado[];
+  mensagens: Mensagem[];
+  inscricoesPush: InscricaoPush[];
   modeloComunicado: ModeloComunicado;
   seq: {
     morador: number;
@@ -37,6 +43,8 @@ type Banco = {
     nota: number;
     admin: number;
     comunicado: number;
+    mensagem: number;
+    inscricao: number;
   };
 };
 
@@ -94,8 +102,19 @@ function semear(): Banco {
     notas: [],
     admins: [],
     comunicados: [],
+    mensagens: [],
+    inscricoesPush: [],
     modeloComunicado: { ...MODELO_COMUNICADO_PADRAO },
-    seq: { morador: 0, atualizacao: 0, documento: 0, nota: 0, admin: 0, comunicado: 0 },
+    seq: {
+      morador: 0,
+      atualizacao: 0,
+      documento: 0,
+      nota: 0,
+      admin: 0,
+      comunicado: 0,
+      mensagem: 0,
+      inscricao: 0,
+    },
   };
 
   // Primeiro administrador (mesma regra do banco real). Se a senha veio das
@@ -175,6 +194,26 @@ function semear(): Banco {
       author: 'Equipe ADEHASC',
       created_at: diasAtras(2),
     });
+    banco.mensagens.push(
+      {
+        id: ++banco.seq.mensagem,
+        resident_id: teste.id,
+        sender: 'morador',
+        text: 'Boa tarde! Queria saber se preciso levar o carnê do IPTU na vistoria.',
+        read_by_admin: true,
+        read_by_resident: true,
+        created_at: diasAtras(3),
+      },
+      {
+        id: ++banco.seq.mensagem,
+        resident_id: teste.id,
+        sender: 'equipe',
+        text: 'Boa tarde, José! Pode deixar o carnê separado em casa que a nossa equipe confere no dia. Qualquer coisa, estamos por aqui.',
+        read_by_admin: true,
+        read_by_resident: false,
+        created_at: diasAtras(3),
+      }
+    );
     banco.comunicados.push({
       id: ++banco.seq.comunicado,
       batch_id: 'demonstracao-1',
@@ -414,6 +453,92 @@ export const dadosMemoria: Dados = {
       admin.password_hash = hash;
       admin.password_changed = true;
     }
+  },
+
+  async enviarMensagem(moradorId, remetente, texto): Promise<Mensagem> {
+    const b = banco();
+    const mensagem: Mensagem = {
+      id: ++b.seq.mensagem,
+      resident_id: moradorId,
+      sender: remetente,
+      text: texto,
+      read_by_admin: remetente === 'equipe',
+      read_by_resident: remetente === 'morador',
+      created_at: agoraIso(),
+    };
+    b.mensagens.push(mensagem);
+    return mensagem;
+  },
+
+  async listarMensagens(moradorId: number): Promise<Mensagem[]> {
+    return banco()
+      .mensagens.filter((m) => m.resident_id === moradorId)
+      .sort((a, b) =>
+        a.created_at === b.created_at ? a.id - b.id : a.created_at > b.created_at ? 1 : -1
+      );
+  },
+
+  async marcarMensagensLidas(moradorId: number, por: RemetenteMensagem): Promise<void> {
+    for (const mensagem of banco().mensagens) {
+      if (mensagem.resident_id !== moradorId) continue;
+      if (por === 'equipe' && mensagem.sender === 'morador') mensagem.read_by_admin = true;
+      if (por === 'morador' && mensagem.sender === 'equipe') mensagem.read_by_resident = true;
+    }
+  },
+
+  async listarConversas(): Promise<Conversa[]> {
+    const b = banco();
+    const porMorador = new Map<number, Mensagem[]>();
+    for (const mensagem of b.mensagens) {
+      const lista = porMorador.get(mensagem.resident_id) || [];
+      lista.push(mensagem);
+      porMorador.set(mensagem.resident_id, lista);
+    }
+    const conversas: Conversa[] = [];
+    for (const [moradorId, mensagens] of porMorador) {
+      const morador = b.moradores.find((m) => m.id === moradorId);
+      if (!morador) continue;
+      const ordenadas = [...mensagens].sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+      const ultima = ordenadas[ordenadas.length - 1];
+      conversas.push({
+        resident_id: moradorId,
+        nome: morador.full_name,
+        protocolo: morador.protocol,
+        ultima_mensagem: ultima.text,
+        remetente_ultima: ultima.sender,
+        ultima_em: ultima.created_at,
+        nao_lidas: mensagens.filter((m) => m.sender === 'morador' && !m.read_by_admin).length,
+      });
+    }
+    return conversas.sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
+  },
+
+  async salvarInscricaoPush(moradorId, endpoint, p256dh, auth): Promise<void> {
+    const b = banco();
+    const existente = b.inscricoesPush.find((i) => i.endpoint === endpoint);
+    if (existente) {
+      existente.resident_id = moradorId;
+      existente.p256dh = p256dh;
+      existente.auth = auth;
+      return;
+    }
+    b.inscricoesPush.push({
+      id: ++b.seq.inscricao,
+      resident_id: moradorId,
+      endpoint,
+      p256dh,
+      auth,
+      created_at: agoraIso(),
+    });
+  },
+
+  async removerInscricaoPush(endpoint: string): Promise<void> {
+    const b = banco();
+    b.inscricoesPush = b.inscricoesPush.filter((i) => i.endpoint !== endpoint);
+  },
+
+  async listarInscricoesPush(moradorId: number): Promise<InscricaoPush[]> {
+    return banco().inscricoesPush.filter((i) => i.resident_id === moradorId);
   },
 
   async obterModeloComunicado(): Promise<ModeloComunicado> {

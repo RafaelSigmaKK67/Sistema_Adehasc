@@ -3,6 +3,7 @@
 
 import { etapaInfo } from '@/lib/etapas';
 import { exigirAdmin, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
+import { notificarMorador } from '@/lib/push';
 import { obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await dados.atualizarMorador(id, { stage: etapa });
     const mensagem = mensagemPersonalizada || etapaInfo(etapa).texto;
     const atualizacao = await dados.adicionarAtualizacao(id, mensagem, etapa);
+    await notificarMorador(dados, id, {
+      titulo: 'ADEHASC — seu processo andou!',
+      corpo: `Nova etapa: ${etapaInfo(etapa).titulo}. Toque para ver o andamento.`,
+      url: '/painel',
+    });
 
     return jsonOk({ ok: true, etapa, atualizacao });
   } catch {

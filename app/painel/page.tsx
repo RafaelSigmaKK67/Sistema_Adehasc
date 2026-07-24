@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import Logo from '@/components/Logo';
 import CampoSenha from '@/components/CampoSenha';
+import AplicativoNotificacoes from '@/components/AplicativoNotificacoes';
 import { ETAPAS, ROTULO_SITUACAO, SituacaoDocumento } from '@/lib/etapas';
 import {
   formatarCpf,
@@ -46,6 +47,7 @@ type DadosPainel = {
   atualizacoes: Atualizacao[];
   documentos: Documento[];
   comunicados: Comunicado[];
+  mensagens_nao_lidas: number;
 };
 
 export default function PaginaPainel() {
@@ -191,6 +193,22 @@ export default function PaginaPainel() {
           </div>
 
           <div>
+            <section className="cartao" aria-labelledby="titulo-conversa">
+              <h2 id="titulo-conversa">
+                Fale com a gente{' '}
+                {dados.mensagens_nao_lidas > 0 && (
+                  <span className="selo-nao-lidas">{dados.mensagens_nao_lidas} nova(s)</span>
+                )}
+              </h2>
+              <p className="texto-suave">
+                Tire dúvidas e peça informações direto pelo sistema — a equipe responde por
+                aqui.
+              </p>
+              <Link className="botao botao-contorno botao-largo" href="/painel/conversa">
+                💬 Abrir a conversa
+              </Link>
+            </section>
+
             {comunicados.length > 0 && (
               <section className="cartao" aria-labelledby="titulo-comunicados">
                 <h2 id="titulo-comunicados">Comunicados</h2>
@@ -238,6 +256,8 @@ export default function PaginaPainel() {
                 ))}
               </ul>
             </section>
+
+            <AplicativoNotificacoes />
 
             <MeusDados morador={morador} aoSalvar={carregar} />
 

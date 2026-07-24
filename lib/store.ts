@@ -60,6 +60,37 @@ export type Admin = {
   created_at: string;
 };
 
+export type RemetenteMensagem = 'morador' | 'equipe';
+
+export type Mensagem = {
+  id: number;
+  resident_id: number;
+  sender: RemetenteMensagem;
+  text: string;
+  read_by_admin: boolean;
+  read_by_resident: boolean;
+  created_at: string;
+};
+
+export type Conversa = {
+  resident_id: number;
+  nome: string;
+  protocolo: string;
+  ultima_mensagem: string;
+  remetente_ultima: RemetenteMensagem;
+  ultima_em: string;
+  nao_lidas: number; // mensagens do morador ainda não lidas pela equipe
+};
+
+export type InscricaoPush = {
+  id: number;
+  resident_id: number;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+};
+
 export type Comunicado = {
   id: number;
   batch_id: string;
@@ -163,6 +194,15 @@ export interface Dados {
   criarAdmin(nome: string, email: string, hash: string, senhaTrocada: boolean): Promise<Admin>;
   listarAdmins(): Promise<Admin[]>;
   definirSenhaAdmin(id: number, hash: string): Promise<void>;
+
+  enviarMensagem(moradorId: number, remetente: RemetenteMensagem, texto: string): Promise<Mensagem>;
+  listarMensagens(moradorId: number): Promise<Mensagem[]>;
+  marcarMensagensLidas(moradorId: number, por: RemetenteMensagem): Promise<void>;
+  listarConversas(): Promise<Conversa[]>;
+
+  salvarInscricaoPush(moradorId: number, endpoint: string, p256dh: string, auth: string): Promise<void>;
+  removerInscricaoPush(endpoint: string): Promise<void>;
+  listarInscricoesPush(moradorId: number): Promise<InscricaoPush[]>;
 
   obterModeloComunicado(): Promise<ModeloComunicado>;
   salvarModeloComunicado(modelo: ModeloComunicado): Promise<void>;
