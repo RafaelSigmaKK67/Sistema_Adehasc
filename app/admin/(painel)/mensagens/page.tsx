@@ -83,8 +83,9 @@ export default function PaginaMensagens() {
                   </span>
                   <span className="texto-suave conversa-previa">
                     {conversa.remetente_ultima === 'equipe' ? 'Equipe: ' : ''}
-                    {conversa.ultima_mensagem.slice(0, 90)}
-                    {conversa.ultima_mensagem.length > 90 ? '…' : ''}
+                    {conversa.ultima_mensagem
+                      ? `${conversa.ultima_mensagem.slice(0, 90)}${conversa.ultima_mensagem.length > 90 ? '…' : ''}`
+                      : '📎 Anexo'}
                   </span>
                 </Link>
               </li>

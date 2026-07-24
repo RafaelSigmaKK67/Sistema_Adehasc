@@ -62,6 +62,26 @@ export type Admin = {
 
 export type RemetenteMensagem = 'morador' | 'equipe';
 
+/** Dados do anexo que circulam nas listagens (sem o conteúdo do arquivo). */
+export type AnexoMeta = {
+  id: number;
+  nome: string;
+  mime: string;
+  tamanho: number;
+};
+
+export type Anexo = AnexoMeta & {
+  resident_id: number;
+  dados_base64: string;
+};
+
+export type NovoAnexo = {
+  nome: string;
+  mime: string;
+  tamanho: number;
+  dados_base64: string;
+};
+
 export type Mensagem = {
   id: number;
   resident_id: number;
@@ -70,6 +90,7 @@ export type Mensagem = {
   read_by_admin: boolean;
   read_by_resident: boolean;
   created_at: string;
+  anexo: AnexoMeta | null;
 };
 
 export type Conversa = {
@@ -195,10 +216,16 @@ export interface Dados {
   listarAdmins(): Promise<Admin[]>;
   definirSenhaAdmin(id: number, hash: string): Promise<void>;
 
-  enviarMensagem(moradorId: number, remetente: RemetenteMensagem, texto: string): Promise<Mensagem>;
+  enviarMensagem(
+    moradorId: number,
+    remetente: RemetenteMensagem,
+    texto: string,
+    anexo?: NovoAnexo
+  ): Promise<Mensagem>;
   listarMensagens(moradorId: number): Promise<Mensagem[]>;
   marcarMensagensLidas(moradorId: number, por: RemetenteMensagem): Promise<void>;
   listarConversas(): Promise<Conversa[]>;
+  obterAnexo(anexoId: number): Promise<Anexo | null>;
 
   salvarInscricaoPush(moradorId: number, endpoint: string, p256dh: string, auth: string): Promise<void>;
   removerInscricaoPush(endpoint: string): Promise<void>;

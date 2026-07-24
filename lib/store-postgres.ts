@@ -6,6 +6,7 @@ import { urlBanco } from '@/lib/ambiente';
 import { DOCUMENTOS_PADRAO, etapaInfo } from '@/lib/etapas';
 import {
   Admin,
+  Anexo,
   Atualizacao,
   CamposMorador,
   Comunicado,
@@ -21,6 +22,7 @@ import {
   ModeloComunicado,
   Morador,
   Nota,
+  NovoAnexo,
   NovoMorador,
   RemetenteMensagem,
   gerarProtocolo,
@@ -121,6 +123,15 @@ function paraMensagem(linha: Linha): Mensagem {
     read_by_admin: Boolean(linha.read_by_admin),
     read_by_resident: Boolean(linha.read_by_resident),
     created_at: iso(linha.created_at),
+    anexo:
+      linha.anexo_id === null || linha.anexo_id === undefined
+        ? null
+        : {
+            id: Number(linha.anexo_id),
+            nome: String(linha.anexo_nome ?? 'arquivo'),
+            mime: String(linha.anexo_mime ?? 'application/octet-stream'),
+            tamanho: Number(linha.anexo_tamanho ?? 0),
+          },
   };
 }
 
@@ -239,6 +250,18 @@ async function criarTabelas(): Promise<void> {
     );
   `);
   await p.query(`
+    CREATE TABLE IF NOT EXISTS attachments (
+      id serial PRIMARY KEY,
+      message_id int NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      resident_id int NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
+      filename text NOT NULL,
+      mime text NOT NULL,
+      size int NOT NULL,
+      data_base64 text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await p.query(`
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id serial PRIMARY KEY,
       resident_id int NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
@@ -253,6 +276,7 @@ async function criarTabelas(): Promise<void> {
   await p.query('CREATE INDEX IF NOT EXISTS idx_residents_created ON residents(created_at);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_announcements_resident ON announcements(resident_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_messages_resident ON messages(resident_id);');
+  await p.query('CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);');
   await p.query('CREATE INDEX IF NOT EXISTS idx_push_resident ON push_subscriptions(resident_id);');
 
   // Primeiro administrador na primeira execução. Se a senha veio das variáveis
@@ -552,18 +576,50 @@ export const dadosPostgres: Dados = {
     );
   },
 
-  async enviarMensagem(moradorId, remetente, texto): Promise<Mensagem> {
-    const r = await pool().query(
-      `INSERT INTO messages (resident_id, sender, text, read_by_admin, read_by_resident)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [moradorId, remetente, texto, remetente === 'equipe', remetente === 'morador']
-    );
-    return paraMensagem(r.rows[0]);
+  async enviarMensagem(moradorId, remetente, texto, anexo?: NovoAnexo): Promise<Mensagem> {
+    return comTransacao(async (cliente) => {
+      const inserida = await cliente.query(
+        `INSERT INTO messages (resident_id, sender, text, read_by_admin, read_by_resident)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [moradorId, remetente, texto, remetente === 'equipe', remetente === 'morador']
+      );
+      const linha = inserida.rows[0];
+      if (anexo) {
+        const anexoInserido = await cliente.query(
+          `INSERT INTO attachments (message_id, resident_id, filename, mime, size, data_base64)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+          [linha.id, moradorId, anexo.nome, anexo.mime, anexo.tamanho, anexo.dados_base64]
+        );
+        linha.anexo_id = anexoInserido.rows[0].id;
+        linha.anexo_nome = anexo.nome;
+        linha.anexo_mime = anexo.mime;
+        linha.anexo_tamanho = anexo.tamanho;
+      }
+      return paraMensagem(linha);
+    });
+  },
+
+  async obterAnexo(anexoId: number): Promise<Anexo | null> {
+    const r = await pool().query('SELECT * FROM attachments WHERE id = $1', [anexoId]);
+    if (!r.rows[0]) return null;
+    const linha = r.rows[0];
+    return {
+      id: Number(linha.id),
+      resident_id: Number(linha.resident_id),
+      nome: String(linha.filename ?? 'arquivo'),
+      mime: String(linha.mime ?? 'application/octet-stream'),
+      tamanho: Number(linha.size ?? 0),
+      dados_base64: String(linha.data_base64 ?? ''),
+    };
   },
 
   async listarMensagens(moradorId: number): Promise<Mensagem[]> {
     const r = await pool().query(
-      'SELECT * FROM messages WHERE resident_id = $1 ORDER BY created_at, id',
+      `SELECT m.*, a.id AS anexo_id, a.filename AS anexo_nome, a.mime AS anexo_mime, a.size AS anexo_tamanho
+       FROM messages m
+       LEFT JOIN attachments a ON a.message_id = m.id
+       WHERE m.resident_id = $1
+       ORDER BY m.created_at, m.id`,
       [moradorId]
     );
     return r.rows.map(paraMensagem);

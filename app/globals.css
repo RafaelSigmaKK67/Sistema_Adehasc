@@ -632,6 +632,61 @@ html[data-tema='escuro'] .logo-img-escura { display: block; }
 .balao-autor { display: block; font-size: 0.7rem; font-weight: 700; color: var(--suave); }
 .balao-texto { margin: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .balao-hora { display: block; font-size: 0.68rem; color: var(--suave); text-align: right; }
+.balao-anexo-imagem { display: block; margin: 4px 0; }
+.balao-anexo-imagem img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 10px;
+  display: block;
+}
+.balao-anexo-arquivo {
+  display: inline-block;
+  margin: 4px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--papel);
+  font-weight: 700;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+.anexo-pendente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px dashed var(--azul);
+  border-radius: 10px;
+  background: var(--azul-suave);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.anexo-remover {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--suave);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.anexo-remover:hover { color: var(--vermelho); }
+.botao-anexar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 42px;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  background: var(--papel);
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.botao-anexar:hover { border-color: var(--azul); background: var(--azul-suave); }
+
 .chat-envio { display: flex; gap: 8px; margin-top: 10px; }
 .chat-envio input {
   flex: 1;

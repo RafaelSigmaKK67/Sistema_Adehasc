@@ -7,8 +7,20 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { formatarDataHora } from '@/lib/formatar';
+import {
+  AnexoMeta,
+  AnexoNoBalao,
+  AnexoParaEnvio,
+  prepararArquivo,
+} from '@/components/ChatAnexo';
 
-type Mensagem = { id: number; remetente: 'morador' | 'equipe'; texto: string; criada_em: string };
+type Mensagem = {
+  id: number;
+  remetente: 'morador' | 'equipe';
+  texto: string;
+  criada_em: string;
+  anexo: AnexoMeta | null;
+};
 type MoradorResumo = { id: number; nome: string; protocolo: string };
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
@@ -19,10 +31,26 @@ export default function PaginaConversaAdmin() {
   const [morador, setMorador] = useState<MoradorResumo | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[] | null>(null);
   const [texto, setTexto] = useState('');
+  const [anexoPendente, setAnexoPendente] = useState<AnexoParaEnvio | null>(null);
+  const [preparandoAnexo, setPreparandoAnexo] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
   const fimRef = useRef<HTMLDivElement>(null);
+  const arquivoRef = useRef<HTMLInputElement>(null);
   const totalAnterior = useRef(0);
+
+  async function aoEscolherArquivo(arquivo: File | undefined) {
+    if (!arquivo) return;
+    setErro('');
+    setPreparandoAnexo(true);
+    const resultado = await prepararArquivo(arquivo);
+    setPreparandoAnexo(false);
+    if ('erro' in resultado) {
+      setErro(resultado.erro);
+      return;
+    }
+    setAnexoPendente(resultado.anexo);
+  }
 
   const carregar = useCallback(async () => {
     try {
@@ -62,14 +90,14 @@ export default function PaginaConversaAdmin() {
   async function enviar(e: FormEvent) {
     e.preventDefault();
     const conteudo = texto.trim();
-    if (!conteudo || enviando) return;
+    if ((!conteudo && !anexoPendente) || enviando) return;
     setErro('');
     setEnviando(true);
     try {
       const resposta = await fetch(`/api/admin/residents/${parametros.id}/mensagens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: conteudo }),
+        body: JSON.stringify({ texto: conteudo, anexo: anexoPendente || undefined }),
       });
       const dados = await resposta.json().catch(() => null);
       if (!resposta.ok) {
@@ -77,6 +105,8 @@ export default function PaginaConversaAdmin() {
         return;
       }
       setTexto('');
+      setAnexoPendente(null);
+      if (arquivoRef.current) arquivoRef.current.value = '';
       setMensagens((atuais) => [...(atuais || []), dados.mensagem]);
     } catch {
       setErro('Não conseguimos falar com o servidor. Tente de novo.');
@@ -127,7 +157,8 @@ export default function PaginaConversaAdmin() {
                 <span className="balao-autor">
                   {mensagem.remetente === 'equipe' ? 'Você (equipe)' : morador?.nome || 'Morador'}
                 </span>
-                <p className="balao-texto">{mensagem.texto}</p>
+                {mensagem.anexo && <AnexoNoBalao anexo={mensagem.anexo} />}
+                {mensagem.texto && <p className="balao-texto">{mensagem.texto}</p>}
                 <span className="balao-hora">{formatarDataHora(mensagem.criada_em)}</span>
               </div>
             ))
@@ -135,7 +166,40 @@ export default function PaginaConversaAdmin() {
           <div ref={fimRef} />
         </div>
 
+        {anexoPendente && (
+          <div className="anexo-pendente" role="status">
+            📎 {anexoPendente.nome}
+            <button
+              type="button"
+              className="anexo-remover"
+              onClick={() => {
+                setAnexoPendente(null);
+                if (arquivoRef.current) arquivoRef.current.value = '';
+              }}
+              aria-label="Remover o anexo"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <form className="chat-envio" onSubmit={enviar}>
+          <input
+            ref={arquivoRef}
+            id="anexo-admin"
+            type="file"
+            accept="image/*,application/pdf"
+            className="escondido-visual"
+            onChange={(e) => aoEscolherArquivo(e.target.files?.[0])}
+          />
+          <label
+            htmlFor="anexo-admin"
+            className="botao-anexar"
+            title="Enviar foto ou PDF"
+            aria-label="Anexar foto ou PDF"
+          >
+            {preparandoAnexo ? '…' : '📎'}
+          </label>
           <label htmlFor="resposta" className="escondido-visual">
             Escreva a resposta
           </label>
@@ -148,7 +212,11 @@ export default function PaginaConversaAdmin() {
             maxLength={2000}
             autoComplete="off"
           />
-          <button type="submit" className="botao botao-primario" disabled={enviando || !texto.trim()}>
+          <button
+            type="submit"
+            className="botao botao-primario"
+            disabled={enviando || preparandoAnexo || (!texto.trim() && !anexoPendente)}
+          >
             Enviar
           </button>
         </form>

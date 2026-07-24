@@ -1,7 +1,8 @@
 // Conversa do morador com a equipe: lista (marcando como lidas) e envia mensagens.
 
+import { validarAnexo } from '@/lib/anexos';
 import { exigirMorador, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
-import { obterDados } from '@/lib/store';
+import { NovoAnexo, obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,12 @@ export async function GET() {
     await dados.marcarMensagensLidas(acesso.sessao.id, 'morador');
     const mensagens = await dados.listarMensagens(acesso.sessao.id);
     return jsonOk({
-      mensagens: mensagens.map(({ id, sender, text, created_at }) => ({
+      mensagens: mensagens.map(({ id, sender, text, created_at, anexo }) => ({
         id,
         remetente: sender,
         texto: text,
         criada_em: created_at,
+        anexo,
       })),
     });
   } catch {
@@ -31,13 +33,20 @@ export async function POST(req: Request) {
   const acesso = exigirMorador();
   if ('resposta' in acesso) return acesso.resposta;
 
-  const corpo = await lerJson<{ texto?: string }>(req);
+  const corpo = await lerJson<{ texto?: string; anexo?: unknown }>(req);
   const texto = (typeof corpo?.texto === 'string' ? corpo.texto : '').trim().slice(0, 2000);
-  if (texto.length < 1) return jsonErro('Escreva a mensagem antes de enviar.');
+
+  let anexo: NovoAnexo | undefined;
+  if (corpo?.anexo) {
+    const validacao = validarAnexo(corpo.anexo);
+    if ('erro' in validacao) return jsonErro(validacao.erro);
+    anexo = validacao.anexo;
+  }
+  if (texto.length < 1 && !anexo) return jsonErro('Escreva a mensagem ou anexe um arquivo.');
 
   try {
     const dados = await obterDados();
-    const mensagem = await dados.enviarMensagem(acesso.sessao.id, 'morador', texto);
+    const mensagem = await dados.enviarMensagem(acesso.sessao.id, 'morador', texto, anexo);
     return jsonOk(
       {
         mensagem: {
@@ -45,6 +54,7 @@ export async function POST(req: Request) {
           remetente: mensagem.sender,
           texto: mensagem.text,
           criada_em: mensagem.created_at,
+          anexo: mensagem.anexo,
         },
       },
       201

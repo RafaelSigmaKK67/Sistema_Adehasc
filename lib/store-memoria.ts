@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { DOCUMENTOS_PADRAO, SituacaoDocumento, etapaInfo } from '@/lib/etapas';
 import {
   Admin,
+  Anexo,
   Atualizacao,
   CamposMorador,
   Comunicado,
@@ -21,6 +22,7 @@ import {
   ModeloComunicado,
   Morador,
   Nota,
+  NovoAnexo,
   NovoMorador,
   RemetenteMensagem,
   gerarProtocolo,
@@ -34,6 +36,7 @@ type Banco = {
   admins: Admin[];
   comunicados: Comunicado[];
   mensagens: Mensagem[];
+  anexos: Anexo[];
   inscricoesPush: InscricaoPush[];
   modeloComunicado: ModeloComunicado;
   seq: {
@@ -44,6 +47,7 @@ type Banco = {
     admin: number;
     comunicado: number;
     mensagem: number;
+    anexo: number;
     inscricao: number;
   };
 };
@@ -103,6 +107,7 @@ function semear(): Banco {
     admins: [],
     comunicados: [],
     mensagens: [],
+    anexos: [],
     inscricoesPush: [],
     modeloComunicado: { ...MODELO_COMUNICADO_PADRAO },
     seq: {
@@ -113,6 +118,7 @@ function semear(): Banco {
       admin: 0,
       comunicado: 0,
       mensagem: 0,
+      anexo: 0,
       inscricao: 0,
     },
   };
@@ -203,6 +209,7 @@ function semear(): Banco {
         read_by_admin: true,
         read_by_resident: true,
         created_at: diasAtras(3),
+        anexo: null,
       },
       {
         id: ++banco.seq.mensagem,
@@ -212,6 +219,7 @@ function semear(): Banco {
         read_by_admin: true,
         read_by_resident: false,
         created_at: diasAtras(3),
+        anexo: null,
       }
     );
     banco.comunicados.push({
@@ -455,8 +463,20 @@ export const dadosMemoria: Dados = {
     }
   },
 
-  async enviarMensagem(moradorId, remetente, texto): Promise<Mensagem> {
+  async enviarMensagem(moradorId, remetente, texto, anexo?: NovoAnexo): Promise<Mensagem> {
     const b = banco();
+    let anexoSalvo: Anexo | null = null;
+    if (anexo) {
+      anexoSalvo = {
+        id: ++b.seq.anexo,
+        resident_id: moradorId,
+        nome: anexo.nome,
+        mime: anexo.mime,
+        tamanho: anexo.tamanho,
+        dados_base64: anexo.dados_base64,
+      };
+      b.anexos.push(anexoSalvo);
+    }
     const mensagem: Mensagem = {
       id: ++b.seq.mensagem,
       resident_id: moradorId,
@@ -465,9 +485,21 @@ export const dadosMemoria: Dados = {
       read_by_admin: remetente === 'equipe',
       read_by_resident: remetente === 'morador',
       created_at: agoraIso(),
+      anexo: anexoSalvo
+        ? {
+            id: anexoSalvo.id,
+            nome: anexoSalvo.nome,
+            mime: anexoSalvo.mime,
+            tamanho: anexoSalvo.tamanho,
+          }
+        : null,
     };
     b.mensagens.push(mensagem);
     return mensagem;
+  },
+
+  async obterAnexo(anexoId: number): Promise<Anexo | null> {
+    return banco().anexos.find((a) => a.id === anexoId) || null;
   },
 
   async listarMensagens(moradorId: number): Promise<Mensagem[]> {
