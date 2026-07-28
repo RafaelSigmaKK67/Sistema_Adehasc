@@ -43,10 +43,24 @@ export default function AplicativoNotificacoes() {
       .catch(() => undefined);
 
     if (suporta) {
+      // Se este aparelho já tem inscrição, reenviamos ao servidor: assim ela
+      // passa a valer para quem está logado AGORA (celular compartilhado em
+      // família não manda as notificações de um morador para o outro).
       navigator.serviceWorker
         .register('/sw.js')
         .then((registro) => registro.pushManager.getSubscription())
-        .then((inscricao) => setAtivas(!!inscricao))
+        .then(async (inscricao) => {
+          if (!inscricao) {
+            setAtivas(false);
+            return;
+          }
+          const resposta = await fetch('/api/me/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inscricao: inscricao.toJSON() }),
+          });
+          setAtivas(resposta.ok);
+        })
         .catch(() => undefined);
     }
 

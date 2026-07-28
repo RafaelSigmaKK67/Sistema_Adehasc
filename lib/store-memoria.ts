@@ -319,10 +319,15 @@ export const dadosMemoria: Dados = {
   async excluirMorador(id: number): Promise<boolean> {
     const b = banco();
     const antes = b.moradores.length;
+    // Apaga tudo do morador, como o ON DELETE CASCADE faz no Postgres.
     b.moradores = b.moradores.filter((m) => m.id !== id);
     b.atualizacoes = b.atualizacoes.filter((a) => a.resident_id !== id);
     b.documentos = b.documentos.filter((d) => d.resident_id !== id);
     b.notas = b.notas.filter((n) => n.resident_id !== id);
+    b.mensagens = b.mensagens.filter((m) => m.resident_id !== id);
+    b.anexos = b.anexos.filter((a) => a.resident_id !== id);
+    b.comunicados = b.comunicados.filter((c) => c.resident_id !== id);
+    b.inscricoesPush = b.inscricoesPush.filter((i) => i.resident_id !== id);
     return b.moradores.length < antes;
   },
 
@@ -530,7 +535,9 @@ export const dadosMemoria: Dados = {
     for (const [moradorId, mensagens] of porMorador) {
       const morador = b.moradores.find((m) => m.id === moradorId);
       if (!morador) continue;
-      const ordenadas = [...mensagens].sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+      const ordenadas = [...mensagens].sort((a, b) =>
+        a.created_at === b.created_at ? a.id - b.id : a.created_at > b.created_at ? 1 : -1
+      );
       const ultima = ordenadas[ordenadas.length - 1];
       conversas.push({
         resident_id: moradorId,
@@ -542,7 +549,8 @@ export const dadosMemoria: Dados = {
         nao_lidas: mensagens.filter((m) => m.sender === 'morador' && !m.read_by_admin).length,
       });
     }
-    return conversas.sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
+    // Mesmo teto do Postgres, para a caixa de entrada não divergir entre modos.
+    return conversas.sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1)).slice(0, 100);
   },
 
   async salvarInscricaoPush(moradorId, endpoint, p256dh, auth): Promise<void> {

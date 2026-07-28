@@ -1,7 +1,31 @@
 // Leitura de CSV para a importação de moradores — aceita separador ';' ou ',',
 // campos entre aspas, BOM do Excel e cabeçalhos com ou sem acento.
 
+/** Uma linha do arquivo, guardando o número real dela na planilha. */
+export type LinhaCsv = { numero: number; colunas: string[] };
+
+/**
+ * Lê o CSV preservando o número original de cada linha (linhas em branco são
+ * puladas, mas não deslocam a contagem — o erro apontado bate com o Excel).
+ */
+export function analisarCsvComNumero(texto: string): LinhaCsv[] {
+  const linhas: LinhaCsv[] = [];
+  let numero = 0;
+  for (const colunas of analisarCsvBruto(texto)) {
+    numero += 1;
+    if (colunas.some((valor) => valor.trim() !== '')) {
+      linhas.push({ numero, colunas });
+    }
+  }
+  return linhas;
+}
+
 export function analisarCsv(texto: string): string[][] {
+  return analisarCsvComNumero(texto).map((linha) => linha.colunas);
+}
+
+/** Divide o texto em linhas/campos, sem descartar linha nenhuma. */
+function analisarCsvBruto(texto: string): string[][] {
   const limpo = (texto || '').replace(/^﻿/, '');
   const primeiraLinha = limpo.split(/\r?\n/, 1)[0] || '';
   const separador =
@@ -17,7 +41,7 @@ export function analisarCsv(texto: string): string[][] {
   const fecharLinha = () => {
     linha.push(campo);
     campo = '';
-    if (linha.some((valor) => valor.trim() !== '')) linhas.push(linha);
+    linhas.push(linha);
     linha = [];
   };
 
@@ -34,7 +58,9 @@ export function analisarCsv(texto: string): string[][] {
       } else {
         campo += caractere;
       }
-    } else if (caractere === '"') {
+    } else if (caractere === '"' && campo === '') {
+      // Aspas só delimitam quando abrem o campo. Uma aspa solta no meio do
+      // texto (ex.: 5" de altura) é caractere comum e não engole o arquivo.
       entreAspas = true;
     } else if (caractere === separador) {
       linha.push(campo);

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { limparCpf } from '@/lib/cpf';
-import { ipDe, jsonErro, jsonOk, lerJson, limiteExcedido, limparLimite, origemValida } from '@/lib/http';
+import { ipDe, jsonErro, jsonOk, lerJson, limiteLoginExcedido, limparLimite, origemValida } from '@/lib/http';
 import { gravarSessao } from '@/lib/sessao';
 import { obterDados } from '@/lib/store';
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   const chaveLimite = `login:${ipDe(req)}:${cpf}`;
-  if (limiteExcedido(chaveLimite)) {
+  if (limiteLoginExcedido(req, cpf, 'login')) {
     return jsonErro('Muitas tentativas seguidas. Aguarde 10 minutos e tente de novo.', 429);
   }
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return jsonErro('CPF ou senha não conferem. Confira e tente de novo.', 401);
     }
     limparLimite(chaveLimite);
-    gravarSessao('morador', morador.id);
+    gravarSessao('morador', morador.id, morador.password_hash);
     return jsonOk({ ok: true, trocar_senha: morador.must_change });
   } catch {
     return jsonErro('Não conseguimos entrar agora. Tente de novo em instantes.', 500);

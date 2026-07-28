@@ -2,7 +2,7 @@
 // A resposta da equipe dispara notificação push no celular do morador.
 
 import { validarAnexo } from '@/lib/anexos';
-import { exigirAdmin, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
+import { exigirAdmin, jsonErro, jsonOk, lerJson, limiteExcedido, origemValida } from '@/lib/http';
 import { notificarMorador } from '@/lib/push';
 import { NovoAnexo, obterDados } from '@/lib/store';
 
@@ -46,6 +46,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if ('resposta' in acesso) return acesso.resposta;
   const id = idValido(params.id);
   if (!id) return jsonErro('Cadastro não encontrado.', 404);
+
+  if (limiteExcedido(`chat-admin:${acesso.sessao.id}`, 40, 60 * 1000)) {
+    return jsonErro('Muitas mensagens seguidas. Aguarde um minuto e tente de novo.', 429);
+  }
 
   const corpo = await lerJson<{ texto?: string; anexo?: unknown }>(req);
   const texto = (typeof corpo?.texto === 'string' ? corpo.texto : '').trim().slice(0, 2000);

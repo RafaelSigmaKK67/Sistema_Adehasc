@@ -8,7 +8,8 @@ const SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
 const SETE_DIAS_S = 7 * 24 * 60 * 60;
 
 export type Papel = 'morador' | 'admin';
-export type Sessao = { papel: Papel; id: number; exp: number };
+/** `sv` (senha-versão) é a marca da senha vigente quando a sessão foi criada. */
+export type Sessao = { papel: Papel; id: number; exp: number; sv?: string };
 
 // Sem AUTH_SECRET em produção, usa um segredo aleatório por processo: as sessões
 // deixam de valer a cada reinício (o painel admin avisa), mas nunca são forjáveis.
@@ -24,9 +25,22 @@ function assinar(dados: string): string {
   return crypto.createHmac('sha256', segredo()).update(dados).digest('base64url');
 }
 
-export function criarToken(papel: Papel, id: number): string {
+/**
+ * Marca curta derivada do hash da senha. Quando a senha muda, a marca muda e
+ * as sessões abertas com a senha antiga param de valer.
+ */
+export function marcaDaSenha(hashSenha: string): string {
+  return crypto.createHash('sha256').update(hashSenha).digest('base64url').slice(0, 12);
+}
+
+export function criarToken(papel: Papel, id: number, hashSenha?: string): string {
   const carga = Buffer.from(
-    JSON.stringify({ papel, id, exp: Date.now() + SETE_DIAS_MS }),
+    JSON.stringify({
+      papel,
+      id,
+      exp: Date.now() + SETE_DIAS_MS,
+      ...(hashSenha ? { sv: marcaDaSenha(hashSenha) } : {}),
+    }),
     'utf8'
   ).toString('base64url');
   return `${carga}.${assinar(carga)}`;
@@ -57,8 +71,8 @@ export function obterSessao(): Sessao | null {
   return lerToken(cookies().get(NOME_COOKIE)?.value);
 }
 
-export function gravarSessao(papel: Papel, id: number): void {
-  cookies().set(NOME_COOKIE, criarToken(papel, id), {
+export function gravarSessao(papel: Papel, id: number, hashSenha?: string): void {
+  cookies().set(NOME_COOKIE, criarToken(papel, id, hashSenha), {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',

@@ -1,10 +1,15 @@
 // Conversa do morador com a equipe: lista (marcando como lidas) e envia mensagens.
 
 import { validarAnexo } from '@/lib/anexos';
-import { exigirMorador, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
+import { exigirMorador, jsonErro, jsonOk, lerJson, limiteExcedido, origemValida } from '@/lib/http';
 import { NovoAnexo, obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
+
+// Ninguém precisa mandar mais que isso numa conversa normal — e assim um
+// aparelho travado (ou um script) não enche o banco com anexos.
+const MAXIMO_MENSAGENS_POR_MINUTO = 12;
+const MAXIMO_ANEXOS_POR_HORA = 20;
 
 export async function GET() {
   const acesso = exigirMorador();
@@ -33,11 +38,21 @@ export async function POST(req: Request) {
   const acesso = exigirMorador();
   if ('resposta' in acesso) return acesso.resposta;
 
+  if (limiteExcedido(`chat:${acesso.sessao.id}`, MAXIMO_MENSAGENS_POR_MINUTO, 60 * 1000)) {
+    return jsonErro('Você enviou muitas mensagens seguidas. Aguarde um minuto e tente de novo.', 429);
+  }
+
   const corpo = await lerJson<{ texto?: string; anexo?: unknown }>(req);
   const texto = (typeof corpo?.texto === 'string' ? corpo.texto : '').trim().slice(0, 2000);
 
   let anexo: NovoAnexo | undefined;
   if (corpo?.anexo) {
+    if (limiteExcedido(`anexo:${acesso.sessao.id}`, MAXIMO_ANEXOS_POR_HORA, 60 * 60 * 1000)) {
+      return jsonErro(
+        'Você enviou muitos arquivos hoje. Aguarde um pouco ou ligue para a gente: (49) 3622-3137.',
+        429
+      );
+    }
     const validacao = validarAnexo(corpo.anexo);
     if ('erro' in validacao) return jsonErro(validacao.erro);
     anexo = validacao.anexo;

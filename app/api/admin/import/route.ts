@@ -5,6 +5,7 @@
 
 import bcrypt from 'bcryptjs';
 import { cpfValido, limparCpf } from '@/lib/cpf';
+import { etapaInfo } from '@/lib/etapas';
 import { dataValida, normalizarTelefone } from '@/lib/formatar';
 import { exigirAdmin, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
 import { gerarSenhaTemporaria } from '@/lib/senha-temporaria';
@@ -109,6 +110,9 @@ export async function POST(req: Request) {
     const etapaTexto = texto(item.etapa, 5);
     const etapa = etapaTexto ? Number(etapaTexto) : 1;
     const resumo = { cpf, nome: nome || '(sem nome)' };
+    // Marca que o cadastro já foi criado: se um ajuste posterior falhar, a
+    // senha temporária não pode sumir do relatório.
+    let moradorCriado = false;
 
     // Mesmas regras do cadastro feito pelo próprio morador.
     if (nome.length < 5) {
@@ -174,18 +178,32 @@ export async function POST(req: Request) {
         property_type: textoOuNulo(item.tipo_imovel, 40),
         password_hash: await bcrypt.hash(senhaTemporaria, 10),
       });
-      await dados.atualizarMorador(morador.id, {
-        must_change: true,
-        ...(etapa > 1 ? { stage: etapa } : {}),
-      });
+      moradorCriado = true;
 
+      // O morador já existe a partir daqui: a senha temporária NÃO pode se
+      // perder se algum ajuste seguinte falhar.
       resultados.push({
         ...resumo,
         ok: true,
         protocolo: morador.protocol,
         senha_temporaria: senhaTemporaria,
       });
+
+      await dados.atualizarMorador(morador.id, {
+        must_change: true,
+        ...(etapa > 1 ? { stage: etapa } : {}),
+      });
+      if (etapa > 1) {
+        // Mesma coerência do painel: mudar de etapa deixa registro na linha
+        // do tempo que o morador vê.
+        await dados.adicionarAtualizacao(morador.id, etapaInfo(etapa).texto, etapa);
+      }
     } catch (erro) {
+      if (moradorCriado) {
+        // Cadastro criado, ajuste posterior falhou: o resultado com a senha já
+        // foi guardado; a equipe corrige a etapa pela ficha se precisar.
+        continue;
+      }
       resultados.push({
         ...resumo,
         ok: false,

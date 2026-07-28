@@ -1,7 +1,7 @@
 // Entrega o arquivo de um anexo do chat. O morador só abre os próprios;
 // a equipe abre qualquer um.
 
-import { jsonErro } from '@/lib/http';
+import { jsonErro, sessaoAindaValida } from '@/lib/http';
 import { obterSessao } from '@/lib/sessao';
 import { obterDados } from '@/lib/store';
 
@@ -10,6 +10,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const sessao = obterSessao();
   if (!sessao) return jsonErro('Sua sessão terminou. Entre novamente.', 401);
+  // Documentos são dados sensíveis: se a senha mudou, a sessão antiga não vale.
+  if (!(await sessaoAindaValida(sessao))) {
+    return jsonErro('Sua senha foi alterada. Entre novamente.', 401);
+  }
 
   const id = Number(params.id);
   if (!Number.isInteger(id) || id <= 0) return jsonErro('Arquivo não encontrado.', 404);

@@ -9,6 +9,19 @@ import { notificarMorador } from '@/lib/push';
 import { Morador, obterDados, preencherModelo } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+// Teto por envio: acima disso o admin filtra por etapa/município. Evita que a
+// função seja morta no meio e o lote fique pela metade.
+const MAXIMO_DESTINATARIOS = 800;
+// Quantos moradores processamos ao mesmo tempo (banco e push aguentam bem).
+const PARALELISMO = 10;
+
+async function emBlocos<T>(itens: T[], tamanho: number, tarefa: (item: T) => Promise<void>) {
+  for (let inicio = 0; inicio < itens.length; inicio += tamanho) {
+    await Promise.all(itens.slice(inicio, inicio + tamanho).map(tarefa));
+  }
+}
 
 export async function GET() {
   const acesso = exigirAdmin();
@@ -83,11 +96,22 @@ export async function POST(req: Request) {
       return jsonOk({
         total: destinatarios.length,
         amostra: destinatarios.slice(0, 5).map((m) => m.full_name),
+        acima_do_limite: destinatarios.length > MAXIMO_DESTINATARIOS,
+        limite: MAXIMO_DESTINATARIOS,
       });
     }
 
+    if (destinatarios.length > MAXIMO_DESTINATARIOS) {
+      return jsonErro(
+        `São ${destinatarios.length} moradores de uma vez — o máximo por envio é ${MAXIMO_DESTINATARIOS}. ` +
+          'Envie em partes, filtrando por etapa ou município.',
+        413
+      );
+    }
+
     const loteId = crypto.randomUUID();
-    for (const morador of destinatarios) {
+    // Primeiro as gravações (rápidas), em blocos paralelos.
+    await emBlocos(destinatarios, PARALELISMO, async (morador) => {
       const tituloFinal = preencherModelo(titulo, morador);
       await dados.criarComunicado(morador.id, loteId, tituloFinal, preencherModelo(texto, morador));
       await dados.adicionarAtualizacao(
@@ -95,12 +119,16 @@ export async function POST(req: Request) {
         `Novo comunicado para você: "${tituloFinal}". Abra a seção Comunicados do seu painel para ler o documento.`,
         null
       );
+    });
+    // Depois as notificações — sem dado pessoal no aviso, porque ele aparece
+    // na tela bloqueada do celular, que qualquer um por perto consegue ler.
+    await emBlocos(destinatarios, PARALELISMO, async (morador) => {
       await notificarMorador(dados, morador.id, {
-        titulo: 'ADEHASC — novo comunicado',
-        corpo: tituloFinal,
+        titulo: 'ADEHASC',
+        corpo: 'Você recebeu um novo comunicado. Toque para ler no seu painel.',
         url: '/painel',
       });
-    }
+    });
     return jsonOk({ total: destinatarios.length, lote_id: loteId }, 201);
   } catch {
     return jsonErro('Não conseguimos enviar o comunicado agora. Tente de novo.', 500);

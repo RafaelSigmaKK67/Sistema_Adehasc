@@ -80,6 +80,24 @@ export default function PaginaPainel() {
   }, [carregar]);
 
   async function sair() {
+    // Desliga as notificações deste aparelho antes de sair: em celular
+    // compartilhado, a próxima pessoa não pode receber os avisos de quem saiu.
+    try {
+      if ('serviceWorker' in navigator) {
+        const registro = await navigator.serviceWorker.getRegistration();
+        const inscricao = await registro?.pushManager.getSubscription();
+        if (inscricao) {
+          await fetch('/api/me/push', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: inscricao.endpoint }),
+          }).catch(() => undefined);
+          await inscricao.unsubscribe().catch(() => undefined);
+        }
+      }
+    } catch {
+      /* sair nunca pode falhar por causa das notificações */
+    }
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     router.push('/');
   }

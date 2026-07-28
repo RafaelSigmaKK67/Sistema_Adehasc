@@ -3,7 +3,7 @@
 
 import bcrypt from 'bcryptjs';
 import { jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
-import { obterSessao } from '@/lib/sessao';
+import { gravarSessao, obterSessao } from '@/lib/sessao';
 import { obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,11 @@ export async function POST(req: Request) {
       }
     }
 
-    await dados.definirSenhaMorador(morador.id, await bcrypt.hash(novaSenha, 10), false);
+    const novoHash = await bcrypt.hash(novaSenha, 10);
+    await dados.definirSenhaMorador(morador.id, novoHash, false);
+    // Renova o cookie com a marca da senha nova: as sessões antigas (outros
+    // aparelhos) deixam de valer, mas quem trocou continua conectado.
+    gravarSessao('morador', morador.id, novoHash);
     return jsonOk({ ok: true });
   } catch {
     return jsonErro('Não conseguimos trocar a senha agora. Tente de novo em instantes.', 500);

@@ -2,6 +2,7 @@
 
 import { normalizarTelefone } from '@/lib/formatar';
 import { exigirMorador, jsonErro, jsonOk, lerJson, origemValida } from '@/lib/http';
+import { marcaDaSenha } from '@/lib/sessao';
 import { moradorPublico, obterDados } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,10 @@ export async function GET() {
     const dados = await obterDados();
     const morador = await dados.moradorPorId(acesso.sessao.id);
     if (!morador) return jsonErro('Cadastro não encontrado. Entre novamente.', 401);
+    // Senha trocada ou redefinida pela equipe derruba as sessões antigas.
+    if (acesso.sessao.sv && acesso.sessao.sv !== marcaDaSenha(morador.password_hash)) {
+      return jsonErro('Sua senha foi alterada. Entre novamente.', 401);
+    }
 
     const [atualizacoes, documentos, comunicados, mensagens] = await Promise.all([
       dados.listarAtualizacoes(morador.id),

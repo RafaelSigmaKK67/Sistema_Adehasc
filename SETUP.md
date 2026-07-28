@@ -58,9 +58,10 @@ git push https://SEU_TOKEN@github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git main
 2. Crie a variável **`AUTH_SECRET`** com um valor aleatório longo (50+ caracteres).
    Dica para gerar um: rode `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
    no terminal, ou use um gerador de senhas.
-3. (Opcional) Crie **`ADMIN_EMAIL`** e **`ADMIN_PASSWORD`** para definir o e-mail e a
-   senha do primeiro administrador. Sem elas, o padrão é `admin@adehasc.com.br` /
-   `adehasc2026`.
+3. **Importante:** crie **`ADMIN_EMAIL`** e **`ADMIN_PASSWORD`** com o e-mail e uma senha
+   forte do primeiro administrador, **antes do primeiro acesso**. Se você pular este passo,
+   o sistema usa uma senha padrão que está publicada no código — qualquer pessoa que veja o
+   repositório consegue entrar até você trocá-la.
 4. (Opcional, para as **notificações no celular**) Crie **`VAPID_PUBLIC_KEY`**,
    **`VAPID_PRIVATE_KEY`** e **`VAPID_SUBJECT`** (ex.: `mailto:contato@adehasc.com.br`).
    Para gerar as duas chaves, rode uma vez no terminal, dentro da pasta do projeto:
@@ -71,9 +72,10 @@ git push https://SEU_TOKEN@github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git main
 ## 5. Primeiro acesso do administrador
 
 1. Abra `https://SEU-PROJETO.vercel.app/admin/entrar`.
-2. Entre com `admin@adehasc.com.br` / `adehasc2026` (ou o que você definiu no passo 4).
-3. O painel mostra um **aviso vermelho** enquanto a senha padrão não for trocada:
-   vá em **Configurações** → **Trocar a minha senha** e crie uma senha forte.
+2. Entre com o e-mail e a senha que você definiu em `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+3. Se você não definiu essas variáveis, o sistema criou o admin com a senha padrão e o
+   painel mostra um **aviso vermelho** até você trocá-la: vá em **Configurações** →
+   **Trocar a minha senha** e crie uma senha forte **agora**.
 4. Em **Configurações** você também pode criar contas para as outras pessoas da equipe.
 
 ## 6. Apontar um domínio próprio (ex.: sistema.adehasc.com.br)

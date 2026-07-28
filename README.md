@@ -58,7 +58,8 @@ demonstração**:
 | --- | --- |
 | `DATABASE_URL` (ou `POSTGRES_URL`) | Conexão com o Postgres. Sem ela, roda em modo demonstração. |
 | `AUTH_SECRET` | Segredo longo e aleatório que assina os cookies de sessão. **Defina sempre em produção.** |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | E-mail e senha do primeiro administrador (padrão: `admin@adehasc.com.br` / `adehasc2026`). |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | E-mail e senha do primeiro administrador. **Defina sempre em produção** — sem elas o sistema usa uma senha padrão publicada no código. |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Chaves das notificações push no celular (gere com `npx web-push generate-vapid-keys`). Sem elas, o recurso fica desligado. |
 
 Para o build de produção:
 

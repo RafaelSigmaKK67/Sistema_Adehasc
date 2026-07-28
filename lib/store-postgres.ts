@@ -39,11 +39,17 @@ function criarPool(): Pool {
   } catch {
     local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
   }
-  return new Pool({
+  const pool = new Pool({
     connectionString: url,
     ssl: local ? undefined : { rejectUnauthorized: false },
     max: 3,
   });
+  // Sem este ouvinte, uma conexão ociosa derrubada pelo Neon vira exceção não
+  // tratada e mata a instância inteira.
+  pool.on('error', (erro) => {
+    console.warn('[banco] conexão ociosa encerrada:', erro.message);
+  });
+  return pool;
 }
 
 function pool(): Pool {
@@ -335,7 +341,14 @@ async function comTransacao<T>(fn: (cliente: PoolClient) => Promise<T>): Promise
     await cliente.query('COMMIT');
     return resultado;
   } catch (erro) {
-    await cliente.query('ROLLBACK');
+    // O ROLLBACK não pode mascarar o erro original nem devolver ao pool um
+    // cliente com transação aberta.
+    try {
+      await cliente.query('ROLLBACK');
+    } catch {
+      cliente.release(true); // descarta a conexão suja
+      throw erro;
+    }
     throw erro;
   } finally {
     cliente.release();

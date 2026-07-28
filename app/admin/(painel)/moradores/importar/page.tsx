@@ -5,7 +5,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { analisarCsv, mapearCabecalho, CampoImportacao } from '@/lib/csv';
+import { analisarCsvComNumero, mapearCabecalho, CampoImportacao } from '@/lib/csv';
 import { cpfValido, limparCpf } from '@/lib/cpf';
 import { formatarCpf } from '@/lib/formatar';
 
@@ -23,11 +23,11 @@ type Resultado = {
 };
 
 function conferirArquivo(textoCsv: string): Conferencia | { erro: string } {
-  const linhas = analisarCsv(textoCsv);
+  const linhas = analisarCsvComNumero(textoCsv);
   if (linhas.length < 2) {
     return { erro: 'O arquivo precisa ter o cabeçalho e pelo menos um morador.' };
   }
-  const mapa = mapearCabecalho(linhas[0]);
+  const mapa = mapearCabecalho(linhas[0].colunas);
   if (mapa.nome === undefined || mapa.cpf === undefined || mapa.telefone === undefined || mapa.municipio === undefined) {
     return {
       erro:
@@ -40,10 +40,9 @@ function conferirArquivo(textoCsv: string): Conferencia | { erro: string } {
   const problemas: Conferencia['problemas'] = [];
   const cpfsNoArquivo = new Set<string>();
 
-  linhas.slice(1).forEach((colunas, indice) => {
+  linhas.slice(1).forEach(({ numero: numeroLinha, colunas }) => {
     const valor = (campo: CampoImportacao) =>
       mapa[campo] === undefined ? '' : (colunas[mapa[campo]!] || '').trim();
-    const numeroLinha = indice + 2; // +2: pula o cabeçalho e conta a partir de 1
     const nome = valor('nome');
     const cpf = limparCpf(valor('cpf'));
 
@@ -148,6 +147,13 @@ export default function PaginaImportar() {
 
   function baixarSenhas() {
     if (!resultados) return;
+    // Mesma proteção da exportação do servidor: um nome começando com = + - @
+    // não pode virar fórmula quando o arquivo abre no Excel.
+    const campoCsv = (valor: string) => {
+      let texto = valor ?? '';
+      if (/^[=+\-@\t]/.test(texto)) texto = `'${texto}`;
+      return /[";\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+    };
     const linhas = [
       'Nome;CPF;Protocolo;Senha temporária;Resultado',
       ...resultados.map((r) =>
@@ -158,7 +164,7 @@ export default function PaginaImportar() {
           r.senha_temporaria || '',
           r.ok ? 'Importado' : `Erro: ${r.erro}`,
         ]
-          .map((campo) => (/[";\n\r]/.test(campo) ? `"${campo.replace(/"/g, '""')}"` : campo))
+          .map(campoCsv)
           .join(';')
       ),
     ];

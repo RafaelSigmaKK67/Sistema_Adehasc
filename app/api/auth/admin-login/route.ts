@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { ipDe, jsonErro, jsonOk, lerJson, limiteExcedido, limparLimite, origemValida } from '@/lib/http';
+import { ipDe, jsonErro, jsonOk, lerJson, limiteLoginExcedido, limparLimite, origemValida } from '@/lib/http';
 import { gravarSessao } from '@/lib/sessao';
 import { obterDados } from '@/lib/store';
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const chaveLimite = `admin-login:${ipDe(req)}:${email}`;
-  if (limiteExcedido(chaveLimite)) {
+  if (limiteLoginExcedido(req, email, 'admin-login')) {
     return jsonErro('Muitas tentativas seguidas. Aguarde 10 minutos e tente de novo.', 429);
   }
 
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       return jsonErro('E-mail ou senha não conferem.', 401);
     }
     limparLimite(chaveLimite);
-    gravarSessao('admin', admin.id);
+    gravarSessao('admin', admin.id, admin.password_hash);
     return jsonOk({ ok: true });
   } catch {
     return jsonErro('Não conseguimos entrar agora. Tente de novo em instantes.', 500);

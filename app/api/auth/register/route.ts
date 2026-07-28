@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       password_hash: await bcrypt.hash(senha, 10),
     });
 
-    gravarSessao('morador', morador.id);
+    gravarSessao('morador', morador.id, morador.password_hash);
     return jsonOk({ protocolo: morador.protocol }, 201);
   } catch (erro) {
     if (eErroDuplicado(erro)) {
